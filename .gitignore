@@ -1,0 +1,9 @@
+.gradle/
+build/
+app/build/
+local.properties
+release.keystore
+build-log.txt
+.superpowers/
+.idea/
+*.iml

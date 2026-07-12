@@ -1,0 +1,12 @@
+[Unit]
+Description=TikTok Song Bridge
+After=network.target
+
+[Service]
+User=scp
+WorkingDirectory=/opt/tiktok-bridge
+ExecStart=/opt/tiktok-bridge/venv/bin/python /opt/tiktok-bridge/bridge.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

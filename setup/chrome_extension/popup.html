@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { width: 300px; padding: 18px; color: #F4F4F8; background:
+    radial-gradient(circle at 15% 5%, rgba(120,40,200,.4), transparent 60%),
+    radial-gradient(circle at 95% 90%, rgba(254,44,85,.3), transparent 55%), #0a0a0f; }
+  h1 { font-size: 17px; font-weight: 900; margin-bottom: 2px; }
+  .sub { color: #9C9CA8; font-size: 12px; margin-bottom: 14px; }
+  input { width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+          border-radius: 10px; color: #F4F4F8; padding: 10px 12px; font-size: 13px; outline: none; margin-top: 8px; }
+  input:focus { border-color: #25F4EE; }
+  button { width: 100%; margin-top: 12px; padding: 11px; border: none; border-radius: 20px; cursor: pointer;
+           font-size: 13px; font-weight: 700; color: #fff;
+           background: linear-gradient(90deg, #FE2C55, #9C1B6B, #25F4EE); }
+  button.flat { background: none; color: #25F4EE; font-weight: 400; padding: 6px; margin-top: 6px; }
+  .msg { font-size: 12px; margin-top: 10px; min-height: 16px; }
+  .msg.err { color: #FE2C55; }
+  .msg.ok { color: #4CD964; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <h1>&#9834; TikTok Songs</h1>
+  <div class="sub" id="who">Nicht angemeldet</div>
+
+  <div id="login">
+    <input type="text" id="user" placeholder="Benutzername">
+    <input type="password" id="pass" placeholder="Passwort">
+    <button id="login-btn">Anmelden</button>
+  </div>
+
+  <div id="main" class="hidden">
+    <button id="save-btn">Aktuelles Video speichern</button>
+    <button class="flat" id="open-web">Web-App &ouml;ffnen</button>
+    <button class="flat" id="logout">Abmelden</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

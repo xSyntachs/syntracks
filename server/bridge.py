@@ -1,0 +1,548 @@
+import asyncio
+import hashlib
+import json
+import queue
+import re
+import secrets
+import shutil
+import subprocess
+import tempfile
+import threading
+import unicodedata
+from collections import defaultdict
+from datetime import datetime, timezone
+
+from shazamio import Shazam
+from hmac import compare_digest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, quote, urlsplit
+from urllib.request import urlopen
+
+BASE = Path(__file__).resolve().parent
+TOKEN = (BASE / "token.txt").read_text().strip()
+USERS_FILE = BASE / "users.json"
+SONGS_DIR = BASE / "songs"
+SONGS_DIR.mkdir(exist_ok=True)
+URL_RE = re.compile(r"https?://\S+")
+
+JOBS = queue.Queue()
+PENDING = defaultdict(dict)
+FILE_LOCK = threading.Lock()
+USERS_LOCK = threading.Lock()
+CLIPS = BASE / "clips"
+CLIPS.mkdir(exist_ok=True)
+
+
+def load_users():
+    return json.loads(USERS_FILE.read_text(encoding="utf-8")) if USERS_FILE.exists() else {}
+
+
+def save_users(users):
+    USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def hash_pw(password, salt):
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
+
+
+def user_for_token(token):
+    if not token:
+        return None
+    for name, info in load_users().items():
+        if compare_digest(token, info["token"]):
+            return name
+    return None
+
+
+def songs_path(username):
+    return SONGS_DIR / f"{username}.jsonl"
+
+
+def clip_key(url):
+    return hashlib.sha1(url.encode()).hexdigest()[:16]
+
+
+def download_clip(url):
+    path = CLIPS / f"{clip_key(url)}.mp3"
+    if path.exists():
+        return path
+    with tempfile.TemporaryDirectory() as tmp:
+        run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3",
+                              "-o", f"{tmp}/clip.%(ext)s", url],
+                             capture_output=True, text=True, timeout=120)
+        if run.returncode != 0:
+            raise RuntimeError("Audio-Download fehlgeschlagen")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{tmp}/clip.mp3",
+                        "-t", "25", "-codec:a", "copy", str(path)],
+                       capture_output=True, timeout=60, check=True)
+    return path
+
+
+def download_video(url):
+    path = CLIPS / f"video_{clip_key(url)}.mp4"
+    if path.exists():
+        return path
+    with tempfile.TemporaryDirectory() as tmp:
+        run = subprocess.run(["yt-dlp", "-q", "-f", "mp4/best", "--no-playlist",
+                              "-o", f"{tmp}/v.%(ext)s", url],
+                             capture_output=True, text=True, timeout=180)
+        out = next(Path(tmp).glob("v.*"), None)
+        if run.returncode != 0 or not out:
+            raise RuntimeError("Video-Download fehlgeschlagen")
+        shutil.move(str(out), path)
+    return path
+
+
+def tiktok_url(text):
+    for url in URL_RE.findall(text):
+        host = urlsplit(url).hostname or ""
+        if host == "tiktok.com" or host.endswith((".tiktok.com", ".tiktokv.com")):
+            return url.rstrip(".,;)\"'")
+    return None
+
+
+# TikTok lokalisiert das "original sound"-Label nach Uploader-Sprache, ein echtes Flag liefert yt-dlp nicht
+ORIGINAL_NON_LATIN = {"الصوت الأصلي", "оригинальный звук", "оригінальний звук", "オリジナル楽曲",
+                      "오리지널 사운드", "原声", "原聲", "เสียงต้นฉบับ", "צליל מקורי",
+                      "πρωτότυπος ήχος", "âm thanh gốc"}
+
+
+def is_original_sound(track):
+    return not track or "origin" in track.lower() or track in ORIGINAL_NON_LATIN
+
+
+def extract(url):
+    run = subprocess.run(["yt-dlp", "--no-download", "-j", url],
+                         capture_output=True, text=True, timeout=120)
+    if run.returncode != 0:
+        errors = run.stderr.strip().splitlines()
+        raise RuntimeError(errors[-1] if errors else "yt-dlp ohne Fehlermeldung")
+    meta = json.loads(run.stdout)
+    track = meta.get("track")
+    return {
+        "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "track": track,
+        "original": is_original_sound(track),
+        "artist": meta.get("artist") or meta.get("uploader"),
+        "title": meta.get("title"),
+        "url": meta.get("webpage_url") or url,
+    }
+
+
+def recognize(clip):
+    with tempfile.TemporaryDirectory() as tmp:
+        variants = [str(clip)]
+        # Slowed-Versionen sind auch pitch-verschoben, asetrate kehrt beides um (atempo allein reicht nicht)
+        for i, rate in enumerate((1.25, 1.4, 0.8)):
+            out = f"{tmp}/v{i}.mp3"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(clip),
+                            "-af", f"asetrate=44100*{rate},aresample=44100", out],
+                           capture_output=True, timeout=60)
+            variants.append(out)
+        for candidate in variants:
+            match = asyncio.run(Shazam().recognize(candidate)).get("track")
+            if match:
+                hit = {"track": match["title"], "artist": match["subtitle"], "recognized": True}
+                # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht findet
+                uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
+                hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
+                hit["artwork"] = (match.get("images") or {}).get("coverart")
+                return {k: v for k, v in hit.items() if v is not None}
+    return None
+
+
+def download_full(match):
+    path = CLIPS / f"full_{clip_key(match['url'])}.mp3"
+    if path.exists():
+        return path
+    name = song_name(match)
+    # Original-Sounds sind oft Slowed/Remix-Fassungen, Shazam mappt die aufs Original-Release.
+    # Volllänge daher immer die Fassung aus dem Video selbst, YouTube nur für offizielle TikTok-Songs.
+    if match.get("original", is_original_sound(match["track"])):
+        source = match["url"]
+    else:
+        source = f'ytsearch1:"{name}" {match["artist"]}'
+    with tempfile.TemporaryDirectory() as tmp:
+        run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3", "--no-playlist",
+                              "-o", f"{tmp}/full.%(ext)s", source],
+                             capture_output=True, text=True, timeout=180)
+        if run.returncode != 0:
+            raise RuntimeError("Download fehlgeschlagen")
+        shutil.move(f"{tmp}/full.mp3", path)
+    return path
+
+
+def caption_song(title):
+    plain = unicodedata.normalize("NFKC", title or "")
+    m = re.search(r"song(?:\s*name)?\s*[:\-–]\s*([^|#\n]+)", plain, re.I)
+    return m.group(1).strip() or None if m else None
+
+
+def song_name(song):
+    if song.get("recognized") or song.get("from_caption") or not song.get("original", is_original_sound(song["track"])):
+        return song["track"]
+    return "Original-Sound"
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+
+
+def itunes_track(artist, name):
+    # Nur validierte Treffer, ein falscher Song ist schlechter als der Clip-Fallback
+    plain = re.sub(r"\(.*?\)", "", name).strip() or name
+    want_artist, want_track = _norm(artist), _norm(plain)
+    for term in dict.fromkeys((f"{artist} {name}", f"{artist} {plain}")):
+        try:
+            with urlopen(f"https://itunes.apple.com/search?media=music&limit=5&term={quote(term)}",
+                         timeout=10) as r:
+                results = json.loads(r.read()).get("results", [])
+        except Exception:
+            continue
+        for hit in results:
+            got_artist, got_track = _norm(hit.get("artistName")), _norm(hit.get("trackName"))
+            artist_ok = want_artist and (want_artist in got_artist or got_artist in want_artist)
+            track_ok = want_track and (want_track in got_track or got_track in want_track)
+            if hit.get("previewUrl") and artist_ok and track_ok:
+                return {"preview": hit["previewUrl"],
+                        "artwork": (hit.get("artworkUrl100") or "").replace("100x100", "300x300") or None,
+                        "genre": hit.get("primaryGenreName")}
+    return None
+
+
+def deezer(path):
+    with urlopen(f"https://api.deezer.com{path}", timeout=10) as r:
+        return json.loads(r.read())
+
+
+def similar_tracks(artist, name):
+    plain = re.sub(r"\(.*?\)", "", name).strip() or name
+    hits = (deezer(f"/search?q={quote(f'{artist} {plain}')}").get("data")
+            or deezer(f"/search?q={quote(plain)}").get("data") or [])
+    if not hits:
+        return []
+    tracks = []
+    for related in deezer(f"/artist/{hits[0]['artist']['id']}/related").get("data", [])[:5]:
+        for t in deezer(f"/artist/{related['id']}/top?limit=2").get("data", []):
+            tracks.append({
+                "track": t["title"],
+                "artist": t["artist"]["name"],
+                "preview": t.get("preview"),
+                "artwork": (t.get("album") or {}).get("cover_medium"),
+                "url": t.get("link"),
+            })
+    return tracks
+
+
+def load_songs(username):
+    path = songs_path(username)
+    if not path.exists():
+        return []
+    with FILE_LOCK:
+        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def append_song(username, entry):
+    with FILE_LOCK, songs_path(username).open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def find_song(username, key):
+    return next((s for s in load_songs(username) if clip_key(s["url"]) == key), None)
+
+
+def worker():
+    # ponytail: eine Queue, ein Worker, Jobs nur im RAM. Stirbt der Prozess mitten im Job, ist der Share weg.
+    while True:
+        username, url = JOBS.get()
+        try:
+            PENDING[username][url]["stage"] = "Video wird geladen"
+            song = extract(url)
+            if any(s["url"] == song["url"] for s in load_songs(username)):
+                continue
+            try:
+                clip = download_clip(song["url"])
+            except Exception:
+                clip = None
+            if song["original"] and clip:
+                PENDING[username][url]["stage"] = "Song wird erkannt"
+                hit = recognize(clip)
+                if hit:
+                    song.update(hit)
+                else:
+                    caption = caption_song(song["title"])
+                    if caption:
+                        song.update({"track": caption, "from_caption": True})
+            PENDING[username][url]["stage"] = "Wird gespeichert"
+            if song_name(song) != "Original-Sound":
+                song.update(itunes_track(song["artist"], song_name(song)) or {})
+            append_song(username, song)
+        except Exception as e:
+            print(f"Job fehlgeschlagen: {username} {url}: {e}", flush=True)
+        finally:
+            PENDING[username].pop(url, None)
+            JOBS.task_done()
+
+
+class Handler(BaseHTTPRequestHandler):
+    def reply(self, code, text, content_type="text/plain; charset=utf-8"):
+        body = text.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_file(self, data, content_type, filename=None):
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        if filename:
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def body(self):
+        length = min(int(self.headers.get("Content-Length") or 0), 65536)
+        return self.rfile.read(length).decode(errors="replace")
+
+    def token_user(self):
+        query = parse_qs(urlsplit(self.path).query)
+        token = self.headers.get("X-Token") or (query.get("token") or [""])[0]
+        return user_for_token(token)
+
+    def query_id(self):
+        return (parse_qs(urlsplit(self.path).query).get("id") or [""])[0]
+
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        if path in ("/register", "/login"):
+            return self.handle_auth(path)
+        username = self.token_user()
+        if not username:
+            return self.reply(401, "Nicht angemeldet")
+        if path == "/add":
+            url = tiktok_url(self.body())
+            if not url:
+                return self.reply(400, "Kein TikTok-Link im geteilten Text")
+            if url not in PENDING[username]:
+                PENDING[username][url] = {"queued_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                          "stage": "Wartet"}
+                JOBS.put((username, url))
+            return self.reply(200, "Gespeichert, Song wird im Hintergrund erkannt")
+        if path == "/save-similar":
+            try:
+                track = json.loads(self.body())
+            except ValueError:
+                return self.reply(400, "Kein JSON")
+            append_song(username, {
+                "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "track": track.get("track"), "original": False, "similar": True,
+                "artist": track.get("artist"), "title": None, "url": track.get("url") or "",
+                "preview": track.get("preview"), "artwork": track.get("artwork"),
+            })
+            return self.reply(200, "Empfehlung gespeichert")
+        if path == "/delete":
+            saved_at = self.body().strip()
+            remaining = [s for s in load_songs(username) if s["saved_at"] != saved_at]
+            with FILE_LOCK:
+                songs_path(username).write_text(
+                    "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in remaining), encoding="utf-8")
+            return self.reply(200, "Eintrag entfernt")
+        if path == "/rename":
+            try:
+                new = str(json.loads(self.body())["new"]).strip().lower()
+            except (ValueError, KeyError):
+                return self.reply(400, "Neuer Name fehlt")
+            if not re.fullmatch(r"[a-z0-9_.]{3,20}", new):
+                return self.reply(400, "Name 3-20 Zeichen, nur a-z 0-9 _ .")
+            with USERS_LOCK:
+                users = load_users()
+                if new in users:
+                    return self.reply(409, "Name vergeben")
+                users[new] = users.pop(username)
+                if songs_path(username).exists():
+                    shutil.move(str(songs_path(username)), str(songs_path(new)))
+                save_users(users)
+            return self.reply(200, json.dumps({"user": new}), "application/json")
+        if path == "/change-password":
+            try:
+                data = json.loads(self.body())
+                old, new = str(data["old"]), str(data["new"])
+            except (ValueError, KeyError):
+                return self.reply(400, "Altes und neues Passwort fehlen")
+            if len(new) < 6:
+                return self.reply(400, "Neues Passwort mindestens 6 Zeichen")
+            with USERS_LOCK:
+                users = load_users()
+                info = users[username]
+                if not compare_digest(hash_pw(old, info["salt"]), info["hash"]):
+                    return self.reply(401, "Altes Passwort falsch")
+                info["salt"] = secrets.token_hex(16)
+                info["hash"] = hash_pw(new, info["salt"])
+                save_users(users)
+            return self.reply(200, "Passwort geändert")
+        if path == "/admin/delete-user":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            target = self.body().strip().lower()
+            if target == username:
+                return self.reply(400, "Eigenes Konto nicht löschbar")
+            with USERS_LOCK:
+                users = load_users()
+                if target not in users:
+                    return self.reply(404, "Unbekannter Nutzer")
+                users.pop(target)
+                songs_path(target).unlink(missing_ok=True)
+                save_users(users)
+            return self.reply(200, "Konto gelöscht")
+        if path == "/admin/reset-password":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            try:
+                data = json.loads(self.body())
+                target, new = str(data["user"]).strip().lower(), str(data["new"])
+            except (ValueError, KeyError):
+                return self.reply(400, "Nutzer und neues Passwort fehlen")
+            if len(new) < 6:
+                return self.reply(400, "Passwort mindestens 6 Zeichen")
+            with USERS_LOCK:
+                users = load_users()
+                if target not in users:
+                    return self.reply(404, "Unbekannter Nutzer")
+                users[target]["salt"] = secrets.token_hex(16)
+                users[target]["hash"] = hash_pw(new, users[target]["salt"])
+                save_users(users)
+            return self.reply(200, "Passwort zurückgesetzt")
+        return self.reply(404, "Nicht gefunden")
+
+    def handle_auth(self, path):
+        try:
+            data = json.loads(self.body())
+            name = str(data["user"]).strip().lower()
+            password = str(data["pass"])
+        except (ValueError, KeyError):
+            return self.reply(400, "Benutzername und Passwort nötig")
+        if not re.fullmatch(r"[a-z0-9_.]{3,20}", name):
+            return self.reply(400, "Benutzername 3-20 Zeichen, nur a-z 0-9 _ .")
+        if len(password) < 6:
+            return self.reply(400, "Passwort mindestens 6 Zeichen")
+        with USERS_LOCK:
+            users = load_users()
+            if path == "/register":
+                if name in users:
+                    return self.reply(409, "Benutzername vergeben")
+                salt = secrets.token_hex(16)
+                token = secrets.token_hex(24)
+                users[name] = {"salt": salt, "hash": hash_pw(password, salt), "token": token}
+                # Erster registrierter Nutzer erbt die Alt-Songs aus der Zeit vor den Konten
+                legacy = BASE / "songs.jsonl"
+                if len(users) == 1 and legacy.exists():
+                    shutil.move(str(legacy), str(songs_path(name)))
+                save_users(users)
+                return self.reply(200, json.dumps({"token": token, "user": name}), "application/json")
+            info = users.get(name)
+            if not info or not compare_digest(hash_pw(password, info["salt"]), info["hash"]):
+                return self.reply(401, "Falscher Benutzername oder Passwort")
+            return self.reply(200, json.dumps({"token": info["token"], "user": name}), "application/json")
+
+    def do_GET(self):
+        path = urlsplit(self.path).path
+        if path == "/":
+            return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"), "text/html; charset=utf-8")
+        if path == "/extension.zip" and (BASE / "extension.zip").exists():
+            data = (BASE / "extension.zip").read_bytes()
+            return self.send_file(data, "application/zip", "tiktok_songs_extension.zip")
+        if path == "/app.apk" and (BASE / "app.apk").exists():
+            data = (BASE / "app.apk").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/vnd.android.package-archive")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        username = self.token_user()
+        if not username:
+            return self.reply(401, "Nicht angemeldet")
+        if path == "/songs":
+            songs = [{**s, "original": s.get("original", is_original_sound(s["track"])),
+                      "name": song_name(s), "clip": clip_key(s["url"])} for s in reversed(load_songs(username))]
+            pending = [{"url": u, **info} for u, info in PENDING[username].items()]
+            return self.reply(200, json.dumps({
+                "user": username,
+                "admin": bool(load_users().get(username, {}).get("admin")),
+                "pending": pending, "songs": songs,
+            }, ensure_ascii=False), "application/json")
+        if path == "/admin/users":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            overview = [{"name": name, "admin": bool(info.get("admin")),
+                         "songs": len(load_songs(name))} for name, info in sorted(load_users().items())]
+            return self.reply(200, json.dumps({"users": overview}, ensure_ascii=False), "application/json")
+        if path == "/similar":
+            match = find_song(username, self.query_id())
+            if not match:
+                return self.reply(404, "Nicht gefunden")
+            try:
+                tracks = similar_tracks(match["artist"], song_name(match))
+            except Exception as e:
+                return self.reply(502, f"Deezer nicht erreichbar: {e}")
+            return self.reply(200, json.dumps({"similar": tracks}, ensure_ascii=False), "application/json")
+        if path in ("/full", "/download-mp3"):
+            match = find_song(username, self.query_id())
+            if not match:
+                return self.reply(404, "Nicht gefunden")
+            try:
+                full = download_full(match)
+            except Exception as e:
+                return self.reply(502, f"Song nicht verfügbar: {e}")
+            fname = safe_name(f"{match['artist']} - {song_name(match)}.mp3") if path == "/download-mp3" else None
+            return self.send_file(full.read_bytes(), "audio/mpeg", fname)
+        if path == "/download-mp4":
+            match = find_song(username, self.query_id())
+            if not match:
+                return self.reply(404, "Nicht gefunden")
+            try:
+                video = download_video(match["url"])
+            except Exception as e:
+                return self.reply(502, f"Video nicht verfügbar: {e}")
+            return self.send_file(video.read_bytes(), "video/mp4",
+                                  safe_name(f"{match['artist']} - {song_name(match)}.mp4"))
+        if path == "/preview":
+            match = find_song(username, self.query_id())
+            if not match:
+                return self.reply(404, "Nicht gefunden")
+            name = song_name(match)
+            preview = match.get("preview")
+            if match.get("similar"):
+                # Deezer-Preview-URLs laufen nach kurzer Zeit ab, pro Abruf frisch auflösen
+                try:
+                    term = quote(f"{match['artist']} {match['track']}")
+                    hits = deezer(f"/search?q={term}").get("data") or []
+                    preview = next((h.get("preview") for h in hits if h.get("preview")), None) or preview
+                except Exception:
+                    pass
+            if not preview and name != "Original-Sound":
+                preview = (itunes_track(match["artist"], name) or {}).get("preview")
+            if preview:
+                self.send_response(302)
+                self.send_header("Location", preview)
+                self.end_headers()
+                return
+            try:
+                clip = download_clip(match["url"])
+            except Exception as e:
+                return self.reply(502, f"Clip nicht verfügbar: {e}")
+            return self.send_file(clip.read_bytes(), "audio/mpeg")
+        return self.reply(404, "Nicht gefunden")
+
+
+def safe_name(name):
+    return re.sub(r'[<>:"/\\|?*]', "_", name)
+
+
+if __name__ == "__main__":
+    threading.Thread(target=worker, daemon=True).start()
+    ThreadingHTTPServer(("127.0.0.1", 8737), Handler).serve_forever()
