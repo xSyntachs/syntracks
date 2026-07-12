@@ -619,7 +619,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Deine Songs", fontSize = 30.sp, fontWeight = FontWeight.Black,
+                    Text("Syntracks", fontSize = 30.sp, fontWeight = FontWeight.Black,
                         color = Scheme.onBackground)
                     Api.user?.let { Text("@$it", fontSize = 12.sp, color = Scheme.onSurfaceVariant) }
                 }
