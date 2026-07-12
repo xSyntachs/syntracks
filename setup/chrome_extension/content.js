@@ -65,6 +65,19 @@ function injectButtons() {
     holder.appendChild(label);
     wrapper.parentElement.insertBefore(holder, wrapper.nextSibling);
   });
+  // Browse-Modal (Video aus Profil/Explore geöffnet): horizontale Icon-Reihe, kompakter Button ohne Label
+  document.querySelectorAll('[data-e2e="browse-share-group"]').forEach((group) => {
+    if (group.querySelector(".tts-save")) return;
+    const btn = document.createElement("button");
+    btn.className = "tts-save";
+    btn.title = "Song speichern (TikTok Songs)";
+    btn.style.cssText = `width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;margin-right:8px;flex:none;
+      background:linear-gradient(135deg,#FE2C55,#7828C8)`;
+    btn.innerHTML = NOTE_SVG.replace('width="22" height="22"', 'width="17" height="17"');
+    btn.onclick = (e) => { e.stopPropagation(); e.preventDefault(); saveVideo(btn); };
+    group.insertBefore(btn, group.firstChild);
+  });
 }
 
 // TikTok ist eine SPA, die Action-Leisten kommen und gehen beim Scrollen

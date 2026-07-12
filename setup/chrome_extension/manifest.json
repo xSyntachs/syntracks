@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TikTok Songs",
   "description": "Speichert die Musik aus dem gerade offenen TikTok-Video in deiner TikTok-Songs-Sammlung.",
-  "version": "2.0",
+  "version": "2.1",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import threading
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 from shazamio import Shazam
@@ -166,6 +166,14 @@ def recognize(clip):
     # loudnorm zieht leise hinterlegte Musik hoch, sonst matcht Shazam Voiceover-Videos nicht.
     duration = audio_duration(clip)
     offsets = [0.0] if duration <= 30 else sorted({0.0, duration * 0.35, duration * 0.7, max(0.0, duration - 22)})
+    # Fantasie-Treffer kommen vor (echtes Beispiel: Ultra-Slowed-Video, erster Kandidat lieferte einen
+    # völlig fremden Song mit Skew 0.048). Deshalb kein First-Hit, sondern Voting: derselbe Song muss
+    # aus einer zweiten Stelle/Rate bestätigt werden, Klammer-Zusätze wie "(Super Slowed)" zählen als
+    # derselbe Song. Einzeltreffer nur bei praktisch perfektem Skew (echte liegen bei ~0.0002).
+    def base_key(match):
+        return (_norm(match["subtitle"]), _norm(re.sub(r"\(.*?\)", "", match["title"])))
+
+    candidates = []
     with tempfile.TemporaryDirectory() as tmp:
         # Slowed-Versionen sind auch pitch-verschoben, asetrate kehrt beides um (atempo allein reicht nicht)
         for rate in (1.0, 1.25, 1.4, 1.7, 0.8):
@@ -179,30 +187,42 @@ def recognize(clip):
                 match = result.get("track")
                 if not match:
                     continue
-                # Stark verfremdetes Audio produziert Fantasie-Treffer, hohe Skew-Werte verraten die
-                skew = (result.get("matches") or [{}])[0]
-                if abs(skew.get("frequencyskew") or 0) > 0.08 or abs(skew.get("timeskew") or 0) > 0.3:
-                    print(f"Shazam-Treffer verworfen (Skew {skew}): {match['subtitle']} - {match['title']}",
+                skews = (result.get("matches") or [{}])[0]
+                if abs(skews.get("frequencyskew") or 0) > 0.08 or abs(skews.get("timeskew") or 0) > 0.3:
+                    print(f"Shazam-Treffer verworfen (Skew {skews}): {match['subtitle']} - {match['title']}",
                           flush=True)
                     continue
-                title = match["title"]
-                hit = {"artist": match["subtitle"], "recognized": True}
-                if rate > 1 and "slow" not in title.lower():
-                    title += " (Slowed)"
-                if rate > 1:
-                    hit["slowed"] = True
-                elif rate < 1:
-                    hit["spedup"] = True
-                hit["track"] = title
-                # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht
-                # findet. Bei Tempo-Varianten wäre die Preview aber die normale Version, dann lieber
-                # der TikTok-Clip als Fallback.
-                if rate == 1:
-                    uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
-                    hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
-                hit["artwork"] = (match.get("images") or {}).get("coverart")
-                return {k: v for k, v in hit.items() if v is not None}
-    return None
+                candidates.append((abs(skews.get("frequencyskew") or 0), rate, match))
+                if sum(1 for _, _, m in candidates if base_key(m) == base_key(match)) >= 2:
+                    break
+            else:
+                continue
+            break
+    if not candidates:
+        return None
+    winner_key, votes = Counter(base_key(m) for _, _, m in candidates).most_common(1)[0]
+    skew, rate, match = min((c for c in candidates if base_key(c[2]) == winner_key), key=lambda c: c[0])
+    if votes < 2 and skew > 0.01:
+        print(f"Unbestätigter Einzeltreffer verworfen (Skew {skew}): {match['subtitle']} - {match['title']}",
+              flush=True)
+        return None
+    title = match["title"]
+    hit = {"artist": match["subtitle"], "recognized": True}
+    if rate > 1 and "slow" not in title.lower():
+        title += " (Slowed)"
+    if rate > 1:
+        hit["slowed"] = True
+    elif rate < 1:
+        hit["spedup"] = True
+    hit["track"] = title
+    # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht
+    # findet. Bei Tempo-Varianten wäre die Preview aber die normale Version, dann lieber
+    # der TikTok-Clip als Fallback.
+    if rate == 1:
+        uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
+        hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
+    hit["artwork"] = (match.get("images") or {}).get("coverart")
+    return {k: v for k, v in hit.items() if v is not None}
 
 
 def download_full(match):
