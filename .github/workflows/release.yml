@@ -14,6 +14,8 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -59,3 +61,14 @@ jobs:
             'mv /opt/tiktok-bridge/app.apk.neu /opt/tiktok-bridge/app.apk && mv /opt/tiktok-bridge/version.json.neu /opt/tiktok-bridge/version.json'
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: GitHub-Release "latest" aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk musik_app.apk
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest musik_app.apk \
+            --title "TikTok Songs $VERSION_NAME" \
+            --notes "versionCode $VERSION_CODE, automatisch gebaut und auf der Bridge deployt." \
+            --latest
