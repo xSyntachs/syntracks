@@ -623,39 +623,33 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 }
             }
             Spacer(Modifier.height(10.dp))
-            feed?.let {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatChip("${songs.size} Songs")
-                    StatChip("${thisWeek(songs)} diese Woche")
-                    topArtist(songs)?.let { top -> StatChip("Top $top") }
-                    Surface(
-                        color = Cyan.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(99.dp),
-                        border = BorderStroke(1.dp, Cyan.copy(alpha = 0.4f)),
-                        modifier = Modifier.clickable { showStats = true },
-                    ) {
-                        Text("Dein Geschmack", Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            fontSize = 12.sp, color = Cyan)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Brush.horizontalGradient(listOf(Color(0xFF0E7490), Violet)))
+                        .clickable { showStats = true }
+                        .padding(horizontal = 16.dp, vertical = 9.dp),
+                ) {
+                    Text("Dein Geschmack", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+                Box {
+                    var filterMenu by remember { mutableStateOf(false) }
+                    val currentLabel = when {
+                        favFilter -> "Favoriten"
+                        sourceFilter != null -> sourceFilter!!.filter
+                        else -> "Alle"
                     }
-                }
-            } ?: Text("lädt…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
-            Spacer(Modifier.height(8.dp))
-            Box {
-                var filterMenu by remember { mutableStateOf(false) }
-                val currentLabel = when {
-                    favFilter -> "Favoriten"
-                    sourceFilter != null -> sourceFilter!!.filter
-                    else -> "Alle"
-                }
-                SourceChip("Filter: $currentLabel", favFilter || sourceFilter != null) { filterMenu = true }
-                DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
-                    DropdownMenuItem(text = { Text("Alle") },
-                        onClick = { filterMenu = false; favFilter = false; sourceFilter = null })
-                    DropdownMenuItem(text = { Text("Favoriten") },
-                        onClick = { filterMenu = false; favFilter = true; sourceFilter = null })
-                    Song.Source.entries.forEach { source ->
-                        DropdownMenuItem(text = { Text(source.filter) },
-                            onClick = { filterMenu = false; favFilter = false; sourceFilter = source })
+                    SourceChip("Filter: $currentLabel", favFilter || sourceFilter != null) { filterMenu = true }
+                    DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
+                        DropdownMenuItem(text = { Text("Alle") },
+                            onClick = { filterMenu = false; favFilter = false; sourceFilter = null })
+                        DropdownMenuItem(text = { Text("Favoriten") },
+                            onClick = { filterMenu = false; favFilter = true; sourceFilter = null })
+                        Song.Source.entries.forEach { source ->
+                            DropdownMenuItem(text = { Text(source.filter) },
+                                onClick = { filterMenu = false; favFilter = false; sourceFilter = source })
+                        }
                     }
                 }
             }
@@ -1139,9 +1133,18 @@ private fun AdminOverlay(onClose: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
     OverlayFrame("Dein Geschmack", onClose) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)) {
+            StatChip("${songs.size} Songs")
+            StatChip("${thisWeek(songs)} diese Woche")
+            StatChip("${songs.count { it.favorite }} Favoriten")
+            topArtist(songs)?.let { top -> StatChip("Top $top") }
+        }
         val genres = songs.mapNotNull { it.genre }.groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
         val artists = songs.groupingBy { it.artist }.eachCount()

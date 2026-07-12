@@ -138,15 +138,8 @@ function schedulePoll() {
 }
 
 function renderStats() {
-  const week = songs.filter(s => Date.now() - new Date(s.saved_at) < 7 * 864e5).length;
-  const artists = {};
-  songs.forEach(s => artists[s.artist] = (artists[s.artist] || 0) + 1);
-  const top = Object.entries(artists).sort((a, b) => b[1] - a[1])[0];
   $("stats").innerHTML =
-    `<span class="chip">${songs.length} Songs</span>` +
-    `<span class="chip">${week} diese Woche</span>` +
-    (top ? `<span class="chip">Top ${esc(top[0])}</span>` : "") +
-    `<span class="chip taste" id="taste">Dein Geschmack</span>` +
+    `<button class="taste-btn" id="taste">${IC.note} Dein Geschmack</button>` +
     `<span class="chip click ${filter !== "ALLE" ? "active" : ""}" id="filter-btn">Filter: ${FILTER_LABEL[filter]}</span>`;
   $("taste").onclick = openTaste;
   $("filter-btn").onclick = (ev) => {
@@ -395,7 +388,14 @@ function openTaste() {
   const artists = {};
   songs.forEach(s => artists[s.artist] = (artists[s.artist] || 0) + 1);
   const tops = Object.entries(artists).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const week = songs.filter(s => Date.now() - new Date(s.saved_at) < 7 * 864e5).length;
+  const favs = songs.filter(s => s.favorite).length;
   modal("Dein Geschmack",
+    `<div class="chips" style="margin-bottom:4px">
+       <span class="chip">${songs.length} Songs</span>
+       <span class="chip">${week} diese Woche</span>
+       <span class="chip">${favs} Favoriten</span>
+     </div>` +
     (sorted.length
       ? sorted.map(([g, c]) => `<div><div style="display:flex;font-size:13px;margin-bottom:5px">
           <span style="flex:1">${esc(g)}</span><span style="color:var(--muted)">${c}</span></div>

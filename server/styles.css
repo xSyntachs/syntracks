@@ -86,9 +86,13 @@ h1 { font-size: clamp(28px, 4vw, 38px); }
 .chip.click { cursor: pointer; transition: background .15s, color .15s; }
 .chip.click:hover { background: var(--glass-hover); color: #fff; }
 .chip.active { background: rgba(254,44,85,.32); color: #fff; border-color: rgba(254,44,85,.6); }
-.chip.taste { background: rgba(37,244,238,.12); border-color: rgba(37,244,238,.45); color: var(--cyan);
-              cursor: pointer; }
-.chip.taste:hover { background: rgba(37,244,238,.22); }
+.taste-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border: none;
+  border-radius: var(--r-pill); cursor: pointer; font-size: 13px; font-weight: 700; color: #fff;
+  background: linear-gradient(100deg, #0E7490, var(--violet));
+  transition: filter .15s, transform .1s; }
+.taste-btn:hover { filter: brightness(1.2); }
+.taste-btn:active { transform: scale(.97); }
+.taste-btn svg { width: 15px; height: 15px; }
 #search { margin-bottom: var(--s3); }
 #list { flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-card);
         padding: var(--s2); background: rgba(0,0,0,.28);
