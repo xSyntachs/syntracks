@@ -168,10 +168,13 @@ def recognize(clip):
     offsets = [0.0] if duration <= 30 else sorted({0.0, duration * 0.35, duration * 0.7, max(0.0, duration - 22)})
     # Fantasie-Treffer kommen vor (echtes Beispiel: Ultra-Slowed-Video, erster Kandidat lieferte einen
     # völlig fremden Song mit Skew 0.048). Deshalb kein First-Hit, sondern Voting: derselbe Song muss
-    # aus einer zweiten Stelle/Rate bestätigt werden, Klammer-Zusätze wie "(Super Slowed)" zählen als
-    # derselbe Song. Einzeltreffer nur bei praktisch perfektem Skew (echte liegen bei ~0.0002).
+    # aus einer zweiten Stelle/Rate bestätigt werden. Verglichen wird NUR der Titel ohne
+    # Klammer-Zusätze, weil dieselbe Nummer je Tempo-Stufe auf verschiedene Katalog-Einträge
+    # matcht (Original vs. Sped-Up/Slowed-Bootlegs anderer "Artists"). Skew taugt nicht als
+    # Einzeltreffer-Kriterium, echte und falsche liegen im selben Bereich, darum bekommt ein
+    # Einzeltreffer eine gezielte Zweitprobe.
     def base_key(match):
-        return (_norm(match["subtitle"]), _norm(re.sub(r"\(.*?\)", "", match["title"])))
+        return _norm(re.sub(r"[(\[].*?[)\]]", "", match["title"]))
 
     candidates = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -192,23 +195,38 @@ def recognize(clip):
                     print(f"Shazam-Treffer verworfen (Skew {skews}): {match['subtitle']} - {match['title']}",
                           flush=True)
                     continue
-                candidates.append((abs(skews.get("frequencyskew") or 0), rate, match))
-                if sum(1 for _, _, m in candidates if base_key(m) == base_key(match)) >= 2:
+                candidates.append((abs(skews.get("frequencyskew") or 0), rate, offset, match))
+                if sum(1 for *_, m in candidates if base_key(m) == base_key(match)) >= 2:
                     break
             else:
                 continue
             break
     if not candidates:
         return None
-    winner_key, votes = Counter(base_key(m) for _, _, m in candidates).most_common(1)[0]
-    skew, rate, match = min((c for c in candidates if base_key(c[2]) == winner_key), key=lambda c: c[0])
-    if votes < 2 and skew > 0.01:
-        print(f"Unbestätigter Einzeltreffer verworfen (Skew {skew}): {match['subtitle']} - {match['title']}",
-              flush=True)
-        return None
+    winner_key, votes = Counter(base_key(m) for *_, m in candidates).most_common(1)[0]
+    skew, rate, offset, match = min((c for c in candidates if base_key(c[3]) == winner_key), key=lambda c: c[0])
+    if votes < 2:
+        # Zweitprobe an einer verschobenen Stelle (bei kurzen Videos mit leicht anderem Tempo),
+        # ein echter Song reproduziert sich dort, ein Fantasie-Treffer nicht
+        if duration > 34:
+            probe_offset = offset + 6 if offset + 28 <= duration else max(0.0, offset - 6)
+            probe_rate = rate
+        else:
+            probe_offset, probe_rate = offset, rate * 1.06
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = f"{tmp}/probe.mp3"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(probe_offset), "-t", "22",
+                            "-i", str(clip),
+                            "-af", f"asetrate=44100*{probe_rate},aresample=44100,loudnorm", probe],
+                           capture_output=True, timeout=60)
+            confirm = asyncio.run(Shazam().recognize(probe)).get("track")
+        if not confirm or base_key(confirm) != winner_key:
+            print(f"Einzeltreffer hielt der Zweitprobe nicht stand: {match['subtitle']} - {match['title']}",
+                  flush=True)
+            return None
     title = match["title"]
     hit = {"artist": match["subtitle"], "recognized": True}
-    if rate > 1 and "slow" not in title.lower():
+    if rate > 1 and not re.search(r"slow|sped", title.lower()):
         title += " (Slowed)"
     if rate > 1:
         hit["slowed"] = True
