@@ -509,6 +509,16 @@ function doLogout() {
   token = null; show(false);
 }
 
+$("howto-btn").onclick = () => modal("Wie benutze ich es?", `<ol class="howto-list">
+  <li><b>Konto erstellen</b>, hier oder in der App, Name und Passwort reichen.</li>
+  <li><b>Android:</b> APK herunterladen und installieren. In TikTok beim Video auf <b>Teilen</b> und dann
+    <b>TikTok Songs</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
+  <li><b>Browser:</b> Extension laden, in Chrome unter chrome://extensions den Entwicklermodus aktivieren,
+    ZIP entpacken und den Ordner über "Entpackte Erweiterung laden" auswählen. Danach hängt unter jedem
+    TikTok-Video ein eigener Speichern-Button.</li>
+  <li>Deine Sammlung liegt hier und in der App, mit Anhören, Downloads, Empfehlungen und Statistik.</li>
+</ol>`);
+
 $("login-btn").onclick = doAuth;
 $("pass").addEventListener("keydown", e => { if (e.key === "Enter") doAuth(); });
 $("toggle-register").onclick = () => {

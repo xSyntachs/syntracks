@@ -66,12 +66,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .err { color: var(--pink); font-size: 13px; min-height: 18px; }
 .downloads { margin-top: var(--s4); display: flex; flex-direction: column; gap: var(--s2);
              padding-top: var(--s4); border-top: 1px solid var(--border); }
-.howto { border: 1px solid var(--border); border-radius: var(--r-input);
-         background: var(--glass); padding: var(--s2) var(--s3); font-size: 13px; }
-.howto summary { cursor: pointer; font-weight: 600; color: var(--cyan); outline: none; }
-.howto ol { margin: var(--s2) 0 var(--s1) 18px; color: var(--muted); display: flex;
-            flex-direction: column; gap: var(--s1); text-align: left; }
-.howto b { color: var(--text); }
+.howto-list { margin: var(--s1) 0 var(--s1) 18px; color: var(--muted); display: flex;
+              flex-direction: column; gap: var(--s2); font-size: 14px; }
+.howto-list b { color: var(--text); }
 
 /* App-Layout */
 #app { max-width: 780px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column;
