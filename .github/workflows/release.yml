@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "setup/chrome_extension/**"
       - ".github/workflows/release.yml"
 
 concurrency:
@@ -47,6 +48,9 @@ jobs:
           echo "{\"versionCode\": $VERSION_CODE, \"versionName\": \"$VERSION_NAME\"}" > version.json
           cat version.json
 
+      - name: Extension paketieren
+        run: (cd setup/chrome_extension && zip -qr ../../extension.zip .)
+
       - name: Auf die Bridge deployen
         run: |
           install -m 600 /dev/null deploy_key
@@ -56,9 +60,11 @@ jobs:
             scp@ssh.xsyntachs.de:/opt/tiktok-bridge/app.apk.neu
           scp -i deploy_key -o StrictHostKeyChecking=accept-new \
             version.json scp@ssh.xsyntachs.de:/opt/tiktok-bridge/version.json.neu
+          scp -i deploy_key -o StrictHostKeyChecking=accept-new \
+            extension.zip scp@ssh.xsyntachs.de:/opt/tiktok-bridge/extension.zip.neu
           # Erst die APK atomar aktivieren, dann die Versionsansage, sonst laden Apps kurz die alte APK
           ssh -i deploy_key -o StrictHostKeyChecking=accept-new scp@ssh.xsyntachs.de \
-            'mv /opt/tiktok-bridge/app.apk.neu /opt/tiktok-bridge/app.apk && mv /opt/tiktok-bridge/version.json.neu /opt/tiktok-bridge/version.json'
+            'mv /opt/tiktok-bridge/app.apk.neu /opt/tiktok-bridge/app.apk && mv /opt/tiktok-bridge/version.json.neu /opt/tiktok-bridge/version.json && mv /opt/tiktok-bridge/extension.zip.neu /opt/tiktok-bridge/extension.zip'
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
 
@@ -67,8 +73,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk musik_app.apk
+          cp extension.zip tiktok_songs_extension.zip
           gh release delete latest --cleanup-tag --yes || true
-          gh release create latest musik_app.apk \
+          gh release create latest musik_app.apk tiktok_songs_extension.zip \
             --title "TikTok Songs $VERSION_NAME" \
             --notes "versionCode $VERSION_CODE, automatisch gebaut und auf der Bridge deployt." \
             --latest
