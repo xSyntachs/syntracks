@@ -46,7 +46,7 @@ object Api {
             .putString("token", token).putString("user", user).apply()
     }
 
-    fun appVersion() = JSONObject(request("GET", "/app-version", withToken = false)).getInt("versionCode")
+    fun appVersion() = JSONObject(request("GET", "/app-version", withToken = false))
     fun apkUrl() = "$BASE/app.apk"
 
     fun add(sharedText: String) = request("POST", "/add", sharedText)

@@ -499,6 +499,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     var showStats by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
     var updating by remember { mutableStateOf(false) }
+    var latestVersion by remember { mutableStateOf<String?>(null) }
     var dialog by remember { mutableStateOf<String?>(null) }
     val hidden = remember { mutableStateListOf<String>() }
     val snackbar = remember { SnackbarHostState() }
@@ -564,9 +565,11 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
     LaunchedEffect(Unit) {
         val installed = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
-        updateAvailable = runCatching {
-            withContext(Dispatchers.IO) { Api.appVersion() } > installed
-        }.getOrDefault(false)
+        runCatching {
+            val server = withContext(Dispatchers.IO) { Api.appVersion() }
+            latestVersion = server.optString("versionName")
+            updateAvailable = server.getInt("versionCode") > installed
+        }
     }
     LaunchedEffect(similarFor) {
         similarTracks = null
@@ -616,7 +619,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Deine Sounds", fontSize = 30.sp, fontWeight = FontWeight.Black,
+                    Text("Deine Songs", fontSize = 30.sp, fontWeight = FontWeight.Black,
                         color = Scheme.onBackground)
                     Api.user?.let { Text("@$it", fontSize = 12.sp, color = Scheme.onSurfaceVariant) }
                 }
@@ -646,6 +649,18 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                         DropdownMenuItem(
                             text = { Text("Abmelden") },
                             onClick = { accountMenu = false; onLogout() },
+                        )
+                        val installedVersion = remember {
+                            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                        }
+                        Text(
+                            when {
+                                latestVersion.isNullOrBlank() -> "Version $installedVersion"
+                                updateAvailable -> "Version $installedVersion · Neueste $latestVersion"
+                                else -> "Version $installedVersion (aktuell)"
+                            },
+                            fontSize = 11.sp, color = Scheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         )
                     }
                 }
