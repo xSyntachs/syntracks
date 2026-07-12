@@ -407,6 +407,23 @@ def find_song(username, key):
     return next((s for s in load_songs(username) if clip_key(s["url"]) == key), None)
 
 
+def bump_song(username, predicate):
+    """Schiebt einen vorhandenen Eintrag mit frischem Zeitstempel nach oben, statt ihn zu duplizieren."""
+    # load_songs nimmt selbst FILE_LOCK (nicht reentrant), also lesen wie /delete und /favorite
+    # außerhalb des Locks und nur das Schreiben sperren
+    songs = load_songs(username)
+    hit = next((s for s in songs if predicate(s)), None)
+    if not hit:
+        return False
+    songs.remove(hit)
+    hit["saved_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    songs.append(hit)
+    with FILE_LOCK:
+        songs_path(username).write_text(
+            "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in songs), encoding="utf-8")
+    return True
+
+
 def songs_payload(username):
     songs = [{**s, "original": s.get("original", is_original_sound(s["track"])),
               "name": song_name(s), "clip": clip_key(s["url"])} for s in reversed(load_songs(username))]
@@ -422,7 +439,8 @@ def worker():
         try:
             PENDING[username][url]["stage"] = "Video wird geladen"
             song = extract(url)
-            if any(s["url"] == song["url"] for s in load_songs(username)):
+            # Schon gespeichertes Video erneut geteilt -> Eintrag rutscht nach oben
+            if bump_song(username, lambda s: s["url"] == song["url"]):
                 continue
             try:
                 clip = download_clip(song["url"])
@@ -439,12 +457,14 @@ def worker():
                     if caption:
                         song.update({"track": caption, "from_caption": True})
             PENDING[username][url]["stage"] = "Wird gespeichert"
-            # Gleicher Song aus einem anderen Video landet nicht nochmal in der Liste
-            if song.get("track") and any(
-                    _norm(s.get("track")) == _norm(song["track"])
-                    and _norm(s.get("artist")) == _norm(song.get("artist"))
-                    for s in load_songs(username)):
-                print(f"Duplikat übersprungen: {username} {song.get('artist')} - {song['track']}", flush=True)
+            # Gleicher Song aus einem anderen Video landet nicht nochmal in der Liste,
+            # der vorhandene Eintrag rutscht stattdessen nach oben
+            if song.get("track") and bump_song(
+                    username,
+                    lambda s: _norm(s.get("track")) == _norm(song["track"])
+                    and _norm(s.get("artist")) == _norm(song.get("artist"))):
+                print(f"Duplikat nach oben geschoben: {username} {song.get('artist')} - {song['track']}",
+                      flush=True)
                 continue
             if song_name(song) != "Original-Sound":
                 extra = itunes_track(song["artist"], song_name(song)) or {}
