@@ -206,20 +206,24 @@ def recognize(clip):
                           flush=True)
                     continue
                 candidates.append((abs(skews.get("frequencyskew") or 0), rate, offset, match))
-                if sum(1 for *_, m in candidates if base_key(m) == base_key(match)) >= 2:
+                # Nur verschiedene Tempo-Stufen zählen als unabhängige Stimmen. Derselbe
+                # Fantasie-Treffer wiederholt sich an benachbarten Stellen desselben Audios
+                # (echter Fall: "the reaper is so tuff" zweimal aus demselben verfremdeten Edit).
+                if len({r for _, r, _, m in candidates if base_key(m) == base_key(match)}) >= 2:
                     break
             else:
                 continue
             break
     if not candidates:
         return None
-    winner_key, votes = Counter(base_key(m) for *_, m in candidates).most_common(1)[0]
+    winner_key, _ = Counter(base_key(m) for *_, m in candidates).most_common(1)[0]
+    votes = len({r for _, r, _, m in candidates if base_key(m) == winner_key})
     skew, rate, offset, match = min((c for c in candidates if base_key(c[3]) == winner_key), key=lambda c: c[0])
     if votes < 2:
-        # Zweitprobe an einer verschobenen Stelle (bei kurzen Videos mit leicht anderem Tempo),
-        # ein echter Song reproduziert sich dort, ein Fantasie-Treffer nicht
+        # Zweitprobe möglichst weit weg vom Fundort (bei kurzen Videos mit leicht anderem
+        # Tempo), ein echter Song läuft durchs ganze Video, ein Fantasie-Treffer zerfällt
         if duration > 34:
-            probe_offset = offset + 6 if offset + 28 <= duration else max(0.0, offset - 6)
+            probe_offset = 0.0 if offset > duration / 2 else max(0.0, duration - 22)
             probe_rate = rate
         else:
             probe_offset, probe_rate = offset, rate * 1.06
