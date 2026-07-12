@@ -709,9 +709,15 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     onSimilar = { similarFor = it },
                     onFavorite = { song ->
                         scope.launch {
-                            withContext(Dispatchers.IO) {
-                                runCatching { Api.favorite(song.savedAt, !song.favorite) }
+                            val ok = withContext(Dispatchers.IO) {
+                                runCatching { Api.favorite(song.savedAt, !song.favorite) }.isSuccess
                             }
+                            android.widget.Toast.makeText(context,
+                                when {
+                                    !ok -> "Speichern fehlgeschlagen"
+                                    song.favorite -> "Aus Favoriten entfernt"
+                                    else -> "In deine Favoriten gespeichert"
+                                }, android.widget.Toast.LENGTH_SHORT).show()
                             tick++
                         }
                     },
