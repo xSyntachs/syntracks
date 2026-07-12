@@ -168,21 +168,40 @@ def recognize(clip):
     offsets = [0.0] if duration <= 30 else sorted({0.0, duration * 0.35, duration * 0.7, max(0.0, duration - 22)})
     with tempfile.TemporaryDirectory() as tmp:
         # Slowed-Versionen sind auch pitch-verschoben, asetrate kehrt beides um (atempo allein reicht nicht)
-        for rate in (1.0, 1.25, 1.4, 0.8):
+        for rate in (1.0, 1.25, 1.4, 1.7, 0.8):
             for offset in offsets:
                 candidate = f"{tmp}/r{rate}o{int(offset)}.mp3"
                 subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(offset), "-t", "22",
                                 "-i", str(clip),
                                 "-af", f"asetrate=44100*{rate},aresample=44100,loudnorm", candidate],
                                capture_output=True, timeout=60)
-                match = asyncio.run(Shazam().recognize(candidate)).get("track")
-                if match:
-                    hit = {"track": match["title"], "artist": match["subtitle"], "recognized": True}
-                    # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht findet
+                result = asyncio.run(Shazam().recognize(candidate))
+                match = result.get("track")
+                if not match:
+                    continue
+                # Stark verfremdetes Audio produziert Fantasie-Treffer, hohe Skew-Werte verraten die
+                skew = (result.get("matches") or [{}])[0]
+                if abs(skew.get("frequencyskew") or 0) > 0.08 or abs(skew.get("timeskew") or 0) > 0.3:
+                    print(f"Shazam-Treffer verworfen (Skew {skew}): {match['subtitle']} - {match['title']}",
+                          flush=True)
+                    continue
+                title = match["title"]
+                hit = {"artist": match["subtitle"], "recognized": True}
+                if rate > 1 and "slow" not in title.lower():
+                    title += " (Slowed)"
+                if rate > 1:
+                    hit["slowed"] = True
+                elif rate < 1:
+                    hit["spedup"] = True
+                hit["track"] = title
+                # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht
+                # findet. Bei Tempo-Varianten wäre die Preview aber die normale Version, dann lieber
+                # der TikTok-Clip als Fallback.
+                if rate == 1:
                     uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
                     hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
-                    hit["artwork"] = (match.get("images") or {}).get("coverart")
-                    return {k: v for k, v in hit.items() if v is not None}
+                hit["artwork"] = (match.get("images") or {}).get("coverart")
+                return {k: v for k, v in hit.items() if v is not None}
     return None
 
 
@@ -194,7 +213,10 @@ def download_full(match):
     # Erkannte Tracks existieren als echtes Release, da liefert YouTube die volle Länge der exakten
     # Version. Nur unerkannte und Caption-Sounds haben kein Release, da bleibt das TikTok-Audio.
     if match.get("recognized") or not match.get("original", is_original_sound(match["track"])):
-        source = f'ytsearch1:"{name}" {match["artist"]}'
+        # Erkannt aus einer Tempo-Variante heißt, das Video hatte die Slowed/Sped-Up-Fassung,
+        # dann soll die Volllänge auch die sein und nicht das normale Release
+        variant = " slowed" if match.get("slowed") else " sped up" if match.get("spedup") else ""
+        source = f'ytsearch1:"{name}" {match["artist"]}{variant}'
     else:
         source = match["url"]
     with tempfile.TemporaryDirectory() as tmp:
@@ -369,8 +391,18 @@ def worker():
                     if caption:
                         song.update({"track": caption, "from_caption": True})
             PENDING[username][url]["stage"] = "Wird gespeichert"
+            # Gleicher Song aus einem anderen Video landet nicht nochmal in der Liste
+            if song.get("track") and any(
+                    _norm(s.get("track")) == _norm(song["track"])
+                    and _norm(s.get("artist")) == _norm(song.get("artist"))
+                    for s in load_songs(username)):
+                print(f"Duplikat übersprungen: {username} {song.get('artist')} - {song['track']}", flush=True)
+                continue
             if song_name(song) != "Original-Sound":
-                song.update(itunes_track(song["artist"], song_name(song)) or {})
+                extra = itunes_track(song["artist"], song_name(song)) or {}
+                if song.get("slowed") or song.get("spedup"):
+                    extra.pop("preview", None)
+                song.update(extra)
             append_song(username, song)
         except Exception as e:
             print(f"Job fehlgeschlagen: {username} {url}: {e}", flush=True)
@@ -716,7 +748,10 @@ class Handler(BaseHTTPRequestHandler):
                     preview = next((h.get("preview") for h in hits if h.get("preview")), None) or preview
                 except Exception:
                     pass
-            if not preview and name != "Original-Sound":
+            # Bei Tempo-Varianten wäre jede Katalog-Preview die normale Fassung, da bleibt der TikTok-Clip
+            if match.get("slowed") or match.get("spedup"):
+                preview = None
+            elif not preview and name != "Original-Sound":
                 preview = (itunes_track(match["artist"], name) or {}).get("preview")
             if preview:
                 self.send_response(302)
@@ -724,10 +759,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
             try:
-                clip = download_clip(match["url"])
+                download_clip(match["url"])
             except Exception as e:
                 return self.reply(502, f"Clip nicht verfügbar: {e}")
-            return self.send_file(clip.read_bytes(), "audio/mpeg")
+            return self.send_file((CLIPS / f"{clip_key(match['url'])}.mp3").read_bytes(), "audio/mpeg")
         return self.reply(404, "Nicht gefunden")
 
 
