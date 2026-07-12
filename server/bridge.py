@@ -698,8 +698,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8", no_store=True)
-        if path == "/favicon.svg":
-            return self.reply(200, (BASE / "favicon.svg").read_text(encoding="utf-8"), "image/svg+xml")
+        if path in ("/favicon.png", "/logo.png"):
+            return self.send_file((BASE / path.lstrip("/")).read_bytes(), "image/png")
         if path == "/privacy":
             return self.reply(200, (BASE / "privacy.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8")

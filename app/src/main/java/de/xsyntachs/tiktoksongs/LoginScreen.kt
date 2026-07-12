@@ -53,7 +53,11 @@ fun LoginScreen(onSuccess: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("♪", fontSize = 56.sp, color = Pink)
+            androidx.compose.foundation.Image(
+                androidx.compose.ui.res.painterResource(R.drawable.logo_syntracks),
+                contentDescription = "Syntracks",
+                modifier = Modifier.padding(bottom = 12.dp).height(92.dp),
+            )
             Text("Syntracks", fontSize = 26.sp, fontWeight = FontWeight.Black, color = Scheme.onBackground)
             Text(if (register) "Konto erstellen" else "Anmelden",
                 fontSize = 14.sp, color = Scheme.onSurfaceVariant,
