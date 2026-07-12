@@ -7,3 +7,4 @@ build-log.txt
 .superpowers/
 .idea/
 *.iml
+__pycache__/
