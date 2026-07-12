@@ -26,7 +26,7 @@ const SOURCES = {
   ORIGINAL:{ label: "Nicht erkannt", color: "rgba(255,255,255,.18)" },
 };
 const FILTER_LABEL = { ALLE: "Alle", FAV: "Favoriten", TIKTOK: "Offiziell", SHAZAM: "Shazam",
-                       CAPTION: "Video-Text", SIMILAR: "Empfehlungen", ORIGINAL: "Original" };
+                       CAPTION: "Aus Caption", SIMILAR: "Empfehlungen", ORIGINAL: "Original" };
 const STAGE_PROGRESS = { "Wartet": 10, "Video wird geladen": 40, "Song wird erkannt": 75, "Wird gespeichert": 95 };
 
 const sourceOf = (s) => s.similar ? "SIMILAR" : s.recognized ? "SHAZAM" : s.from_caption ? "CAPTION"
@@ -146,12 +146,17 @@ function renderStats() {
     `<span class="chip">${songs.length} Songs</span>` +
     `<span class="chip">${week} diese Woche</span>` +
     (top ? `<span class="chip">Top ${esc(top[0])}</span>` : "") +
-    `<span class="chip taste" id="taste">Dein Geschmack</span>`;
+    `<span class="chip taste" id="taste">Dein Geschmack</span>` +
+    `<span class="chip click ${filter !== "ALLE" ? "active" : ""}" id="filter-btn">Filter: ${FILTER_LABEL[filter]}</span>`;
   $("taste").onclick = openTaste;
-  $("filters").innerHTML = Object.keys(FILTER_LABEL).map(f =>
-    `<span class="chip click ${f === filter ? "active" : ""}" data-f="${f}">${FILTER_LABEL[f]}</span>`).join("");
-  document.querySelectorAll("#filters .chip").forEach(el =>
-    el.onclick = () => { filter = el.dataset.f; renderStats(); render(); });
+  $("filter-btn").onclick = (ev) => {
+    ev.stopPropagation();
+    closeMenu();
+    const items = Object.keys(FILTER_LABEL).map(f =>
+      [FILTER_LABEL[f] + (f === filter ? "  ✓" : ""), () => { filter = f; renderStats(); render(); }]);
+    anchorMenu(buildMenu(items), $("filter-btn"));
+  };
+  $("filters").innerHTML = "";
 }
 
 /* ---------- Empfehlungen ---------- */
@@ -194,7 +199,7 @@ function render() {
       : recs.length
         ? recs.map((t, i) => `<div class="mrow">
             <div class="cover" ${t.artwork ? `style="background-image:url('${esc(t.artwork)}')"` : ""} data-rp="${i}">
-              <div class="ply">${IC.play}</div></div>
+              <div class="ply">${playing && playing.clip === "rec:" + i ? IC.pause : IC.play}</div></div>
             <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist)}</span></div>
             <button class="add" data-ra="${i}" title="Zu Favoriten hinzufügen">+</button>
           </div>`).join("")
@@ -231,6 +236,7 @@ function render() {
   });
   document.querySelectorAll("[data-rp]").forEach(el => el.onclick = () => {
     const t = recs[el.dataset.rp];
+    if (playing && playing.clip === "rec:" + el.dataset.rp) { stopPlay(); return; }
     if (!t.preview) { toast("Keine Vorschau verfügbar"); return; }
     playSource("rec:" + el.dataset.rp, t.preview, t.track, t.artist, t.artwork);
   });
@@ -356,10 +362,15 @@ async function openSimilar(seed) {
     <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist)}</span></div>
     <button class="add" data-sa="${i}" title="Zu Favoriten hinzufügen">+</button>
   </div>`).join("");
+  const syncIcons = () => m.el.querySelectorAll("[data-sp]").forEach(el =>
+    el.querySelector(".ply").innerHTML =
+      playing && playing.clip === "sim:" + el.dataset.sp ? IC.pause : IC.play);
   m.el.querySelectorAll("[data-sp]").forEach(el => el.onclick = () => {
     const t = tracks[el.dataset.sp];
+    if (playing && playing.clip === "sim:" + el.dataset.sp) { stopPlay(); syncIcons(); return; }
     if (!t.preview) { toast("Keine Vorschau verfügbar"); return; }
     playSource("sim:" + el.dataset.sp, t.preview, t.track, t.artist, t.artwork);
+    syncIcons();
   });
   m.el.querySelectorAll("[data-sa]").forEach(el => el.onclick = async () => {
     const t = tracks[el.dataset.sa];

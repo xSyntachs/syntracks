@@ -249,14 +249,17 @@ REC_CACHE = {}
 
 def recommendations(username, limit=10):
     all_songs = load_songs(username)
-    cache_key = len(all_songs)
+    favorites = [s for s in all_songs if s.get("favorite")]
+    cache_key = (len(all_songs), len(favorites))
     cached = REC_CACHE.get(username)
     if cached and cached[0] == cache_key:
         return cached[1]
-    own = [s for s in all_songs if not s.get("similar")][-20:]
+    # Favoriten zuerst und mit mehr verwandten Artists, sie wiegen schwerer als bloß Gespeichertes
+    recent = [s for s in all_songs if not s.get("similar") and not s.get("favorite")][-20:]
+    seeds = list(reversed(favorites)) + list(reversed(recent))
     have = {_norm(f"{s['artist']} {song_name(s)}") for s in all_songs}
     seen_artists, pool = set(), []
-    for seed in reversed(own):
+    for seed in seeds:
         name = song_name(seed)
         if name == "Original-Sound":
             continue
@@ -266,7 +269,8 @@ def recommendations(username, limit=10):
             hits = deezer(f"/search?q={term}").get("data") or []
             if not hits:
                 continue
-            for rel in deezer(f"/artist/{hits[0]['artist']['id']}/related").get("data", [])[:3]:
+            related_count = 4 if seed.get("favorite") else 2
+            for rel in deezer(f"/artist/{hits[0]['artist']['id']}/related").get("data", [])[:related_count]:
                 if rel["id"] in seen_artists:
                     continue
                 seen_artists.add(rel["id"])

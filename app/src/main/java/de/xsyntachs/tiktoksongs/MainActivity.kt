@@ -142,8 +142,8 @@ data class Song(
     enum class Source(val label: String, val filter: String) {
         TIKTOK("Offizieller Song", "Offiziell"),
         SHAZAM("Per Shazam erkannt", "Shazam"),
-        CAPTION("Aus Video-Text gelesen", "Video-Text"),
-        SIMILAR("Empfehlung", "Empfehlung"),
+        CAPTION("Aus Caption gelesen", "Aus Caption"),
+        SIMILAR("Empfehlung", "Empfehlungen"),
         ORIGINAL("Nicht erkannt", "Original"),
     }
 }
@@ -302,6 +302,14 @@ private class ClipPlayer {
         player?.release()
         player = null
         state = null
+    }
+}
+
+@Composable
+private fun PauseGlyph(color: Color, size: androidx.compose.ui.unit.Dp) {
+    Row(horizontalArrangement = Arrangement.spacedBy(size / 4)) {
+        Box(Modifier.size(size / 3, size).background(color, RoundedCornerShape(1.dp)))
+        Box(Modifier.size(size / 3, size).background(color, RoundedCornerShape(1.dp)))
     }
 }
 
@@ -632,14 +640,22 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 }
             } ?: Text("lädt…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SourceChip("Alle", sourceFilter == null && !favFilter) { sourceFilter = null; favFilter = false }
-                SourceChip("Favoriten", favFilter) { favFilter = true; sourceFilter = null }
-                Song.Source.entries.forEach { source ->
-                    SourceChip(if (source == Song.Source.SIMILAR) "Empfehlungen" else source.filter,
-                        sourceFilter == source) {
-                        favFilter = false
-                        sourceFilter = if (sourceFilter == source) null else source
+            Box {
+                var filterMenu by remember { mutableStateOf(false) }
+                val currentLabel = when {
+                    favFilter -> "Favoriten"
+                    sourceFilter != null -> sourceFilter!!.filter
+                    else -> "Alle"
+                }
+                SourceChip("Filter: $currentLabel", favFilter || sourceFilter != null) { filterMenu = true }
+                DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
+                    DropdownMenuItem(text = { Text("Alle") },
+                        onClick = { filterMenu = false; favFilter = false; sourceFilter = null })
+                    DropdownMenuItem(text = { Text("Favoriten") },
+                        onClick = { filterMenu = false; favFilter = true; sourceFilter = null })
+                    Song.Source.entries.forEach { source ->
+                        DropdownMenuItem(text = { Text(source.filter) },
+                            onClick = { filterMenu = false; favFilter = false; sourceFilter = source })
                     }
                 }
             }
@@ -947,7 +963,7 @@ private fun SimilarRow(track: SimilarTrack, playing: Boolean?, alreadySaved: Boo
             when (playing) {
                 null -> Icon(Icons.Default.PlayArrow, "Anhören", tint = Color.White, modifier = Modifier.size(22.dp))
                 true -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                false -> Box(Modifier.size(12.dp).background(Color.White, RoundedCornerShape(3.dp)))
+                false -> PauseGlyph(Color.White, 12.dp)
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -1308,7 +1324,7 @@ private fun CoverButton(song: Song, buffering: Boolean?, accent: Color, onPlay: 
                 null -> Icon(Icons.Default.PlayArrow, "Anhören",
                     tint = if (cover != null) Color.White else accent, modifier = Modifier.size(26.dp))
                 true -> CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                false -> Box(Modifier.size(15.dp).background(Color.White, RoundedCornerShape(3.dp)))
+                false -> PauseGlyph(Color.White, 15.dp)
             }
         }
     }
