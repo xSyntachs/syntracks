@@ -552,6 +552,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8", no_store=True)
+        if path == "/privacy":
+            return self.reply(200, (BASE / "privacy.html").read_text(encoding="utf-8"),
+                              "text/html; charset=utf-8")
         if path == "/styles.css":
             return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"),
                               "text/css; charset=utf-8", no_store=True)
