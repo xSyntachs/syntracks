@@ -33,11 +33,12 @@ object Api {
     }
 
     /** wirft bei falschen Daten mit der Server-Meldung als message */
-    fun register(context: Context, name: String, password: String) = auth(context, "/register", name, password)
+    fun register(context: Context, name: String, password: String, invite: String) =
+        auth(context, "/register", name, password, invite)
     fun login(context: Context, name: String, password: String) = auth(context, "/login", name, password)
 
-    private fun auth(context: Context, path: String, name: String, password: String) {
-        val body = JSONObject().put("user", name).put("pass", password).toString()
+    private fun auth(context: Context, path: String, name: String, password: String, invite: String = "") {
+        val body = JSONObject().put("user", name).put("pass", password).put("invite", invite).toString()
         val answer = JSONObject(request("POST", path, body, withToken = false))
         token = answer.getString("token")
         user = answer.getString("user")
@@ -72,6 +73,9 @@ object Api {
     fun adminDeleteUser(name: String) = request("POST", "/admin/delete-user", name)
     fun adminResetPassword(name: String, new: String) =
         request("POST", "/admin/reset-password", JSONObject().put("user", name).put("new", new).toString())
+    fun adminInvites() = request("GET", "/admin/invites")
+    fun adminCreateInvite() = request("POST", "/admin/create-invite")
+    fun adminDeleteInvite(key: String) = request("POST", "/admin/delete-invite", key)
 
     private fun request(method: String, path: String, body: String? = null, withToken: Boolean = true): String {
         val conn = URL(BASE + path).openConnection() as HttpURLConnection

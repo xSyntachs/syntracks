@@ -453,15 +453,39 @@ function openPassword() {
 async function openAdmin() {
   const m = modal("Konten verwalten", `<div class="sub">Lädt…</div>`);
   async function refresh() {
-    let users;
-    try { users = (await (await api("/admin/users")).json()).users; }
+    let users, invites;
+    try {
+      users = (await (await api("/admin/users")).json()).users;
+      invites = (await (await api("/admin/invites")).json()).invites;
+    }
     catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
     m.el.querySelector(".body").innerHTML = users.map(u => `<div class="mrow">
       <div class="meta"><b style="color:${u.admin ? "var(--cyan)" : "inherit"}">@${esc(u.name)}${u.admin ? " · Admin" : ""}</b>
         <span class="artist">${u.songs} Songs</span></div>
       <button class="add" style="font-size:13px" data-rp2="${esc(u.name)}">Passwort</button>
       ${u.name !== userName ? `<button class="add" style="color:var(--pink);font-size:13px" data-du="${esc(u.name)}">Löschen</button>` : ""}
-    </div>`).join("");
+    </div>`).join("") + `
+    <div class="sub" style="margin-top:16px">Einladungen (jeder Key gilt für ein Konto)</div>
+    ${invites.map(k => `<div class="mrow">
+      <div class="meta"><b>${esc(k)}</b></div>
+      <button class="add" style="font-size:13px" data-ci="${esc(k)}">Link kopieren</button>
+      <button class="add" style="color:var(--pink);font-size:13px" data-di="${esc(k)}">Löschen</button>
+    </div>`).join("")}
+    <button class="btn-primary" id="new-invite" style="margin-top:10px">Einladungs-Key erstellen</button>`;
+    m.el.querySelector("#new-invite").onclick = async () => {
+      const created = await (await api("/admin/create-invite", { method: "POST" })).json();
+      await navigator.clipboard.writeText(created.link).catch(() => {});
+      toast("Einladungslink kopiert");
+      refresh();
+    };
+    m.el.querySelectorAll("[data-ci]").forEach(el => el.onclick = async () => {
+      await navigator.clipboard.writeText(`https://tiktok.xsyntachs.de/?invite=${el.dataset.ci}`).catch(() => {});
+      toast("Einladungslink kopiert");
+    });
+    m.el.querySelectorAll("[data-di]").forEach(el => el.onclick = async () => {
+      await api("/admin/delete-invite", { method: "POST", body: el.dataset.di });
+      toast("Einladung gelöscht"); refresh();
+    });
     m.el.querySelectorAll("[data-rp2]").forEach(el => el.onclick = () => {
       const target = el.dataset.rp2;
       const pm = modal("Passwort für @" + esc(target),
@@ -494,7 +518,8 @@ async function doAuth() {
   try {
     const r = await fetch(registerMode ? "/register" : "/login", {
       method: "POST",
-      body: JSON.stringify({ user: $("user").value.trim(), pass: $("pass").value }),
+      body: JSON.stringify({ user: $("user").value.trim(), pass: $("pass").value,
+                             invite: $("invite").value.trim() }),
     });
     if (!r.ok) throw new Error(await r.text());
     const data = await r.json();
@@ -510,7 +535,8 @@ function doLogout() {
 }
 
 $("howto-btn").onclick = () => modal("Wie benutze ich es?", `<ol class="howto-list">
-  <li><b>Konto erstellen</b>, hier oder in der App, Name und Passwort reichen.</li>
+  <li><b>Konto erstellen</b>, hier oder in der App. Du brauchst einen Einladungs-Key von einem Admin,
+    mit einem Einladungslink ist er schon ausgefüllt.</li>
   <li><b>Android:</b> APK herunterladen und installieren. In TikTok beim Video auf <b>Teilen</b> und dann
     <b>TikTok Songs</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
   <li><b>Browser:</b> Extension laden, in Chrome unter chrome://extensions den Entwicklermodus aktivieren,
@@ -521,12 +547,19 @@ $("howto-btn").onclick = () => modal("Wie benutze ich es?", `<ol class="howto-li
 
 $("login-btn").onclick = doAuth;
 $("pass").addEventListener("keydown", e => { if (e.key === "Enter") doAuth(); });
-$("toggle-register").onclick = () => {
-  registerMode = !registerMode;
+function setRegisterMode(on) {
+  registerMode = on;
   $("login-mode").textContent = registerMode ? "Konto erstellen" : "Anmelden";
   $("login-btn").textContent = registerMode ? "Konto erstellen" : "Anmelden";
   $("toggle-register").textContent = registerMode ? "Schon ein Konto? Anmelden" : "Neu hier? Konto erstellen";
-};
+  $("invite").classList.toggle("hidden", !registerMode);
+}
+$("toggle-register").onclick = () => setRegisterMode(!registerMode);
+const inviteFromLink = new URLSearchParams(location.search).get("invite");
+if (inviteFromLink) {
+  $("invite").value = inviteFromLink;
+  setRegisterMode(true);
+}
 $("search").addEventListener("input", render);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
 

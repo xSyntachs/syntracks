@@ -1078,10 +1078,19 @@ private fun PasswordDialog(onClose: () -> Unit) {
 @Composable
 private fun AdminOverlay(onClose: () -> Unit) {
     var users by remember { mutableStateOf<List<Triple<String, Boolean, Int>>?>(null) }
+    var invites by remember { mutableStateOf<List<String>>(emptyList()) }
     var reload by remember { mutableIntStateOf(0) }
     var resetFor by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    fun copyInviteLink(key: String) {
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+            as android.content.ClipboardManager
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+            "Einladung", "https://tiktok.xsyntachs.de/?invite=$key"))
+        android.widget.Toast.makeText(context, "Einladungslink kopiert", android.widget.Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(reload) {
         users = runCatching {
@@ -1091,6 +1100,12 @@ private fun AdminOverlay(onClose: () -> Unit) {
                     val u = arr.getJSONObject(it)
                     Triple(u.getString("name"), u.optBoolean("admin"), u.optInt("songs"))
                 }
+            }
+        }.getOrDefault(emptyList())
+        invites = runCatching {
+            withContext(Dispatchers.IO) {
+                val arr = JSONObject(Api.adminInvites()).getJSONArray("invites")
+                (0 until arr.length()).map { arr.getString(it) }
             }
         }.getOrDefault(emptyList())
     }
@@ -1142,6 +1157,37 @@ private fun AdminOverlay(onClose: () -> Unit) {
                                     reload++
                                 }
                             }) { Icon(Icons.Default.Delete, "Löschen", tint = Pink) }
+                        }
+                    }
+                }
+                item {
+                    Text("Einladungen (jeder Key gilt für ein Konto)",
+                        fontSize = 12.sp, color = Scheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 14.dp, bottom = 2.dp))
+                }
+                items(invites, key = { "inv:$it" }) { inviteKey ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(inviteKey, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                            color = Scheme.onSurface, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { copyInviteLink(inviteKey) }) {
+                            Text("Link", fontSize = 12.sp, color = Cyan)
+                        }
+                        IconButton(onClick = {
+                            scope.launch {
+                                runCatching { withContext(Dispatchers.IO) { Api.adminDeleteInvite(inviteKey) } }
+                                reload++
+                            }
+                        }) { Icon(Icons.Default.Delete, "Löschen", tint = Pink) }
+                    }
+                }
+                item {
+                    DialogButton("Einladungs-Key erstellen") {
+                        scope.launch {
+                            val created = withContext(Dispatchers.IO) {
+                                runCatching { JSONObject(Api.adminCreateInvite()).getString("key") }
+                            }
+                            created.onSuccess { copyInviteLink(it) }
+                            reload++
                         }
                     }
                 }

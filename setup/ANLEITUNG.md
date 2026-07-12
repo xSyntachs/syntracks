@@ -10,14 +10,14 @@ TikTok Songs merkt sich die Musik aus TikTok-Videos. Video teilen oder Link spei
 
 1. Diese Datei aufs Handy schicken oder den Link im Handy-Browser öffnen und herunterladen. Datei: `musik_app.apk` (alternativ der Download-Link, siehe unten).
 2. Die heruntergeladene APK antippen. Android warnt vor unbekannten Quellen, einmal **"Trotzdem installieren"** bzw. der Quelle erlauben.
-3. App öffnen, **"Konto erstellen"** antippen, Benutzername und Passwort ausdenken, fertig.
+3. App öffnen, **"Konto erstellen"** antippen. Benutzername und Passwort ausdenken und den **Einladungs-Key** eintragen, den du vom Admin bekommen hast.
 4. Benachrichtigungen erlauben, wenn die App fragt (sonst siehst du nicht, welcher Song erkannt wurde).
 
 Songs speichern geht dann so: In TikTok beim Video auf **Teilen** und dann **TikTok Songs** wählen. Oder **Link kopieren** und in der Benachrichtigungsleiste auf **"Song speichern"** tippen.
 
 ## 2. Browser (ohne Installation)
 
-Einfach https://tiktok.xsyntachs.de öffnen, anmelden oder Konto erstellen. Gleiche Liste wie in der App, mit Anhören, Suche, Filter und Downloads.
+Einfach https://tiktok.xsyntachs.de öffnen und anmelden. Ein neues Konto brauchst du nur einmal, dafür gibt dir ein Admin einen Einladungslink, der den Key schon ausfüllt. Gleiche Liste wie in der App, mit Anhören, Suche, Filter und Downloads.
 
 ## 3. Chrome-Erweiterung installieren
 

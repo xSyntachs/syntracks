@@ -22,6 +22,7 @@ from urllib.request import urlopen
 BASE = Path(__file__).resolve().parent
 TOKEN = (BASE / "token.txt").read_text().strip()
 USERS_FILE = BASE / "users.json"
+INVITES_FILE = BASE / "invites.json"
 SONGS_DIR = BASE / "songs"
 SONGS_DIR.mkdir(exist_ok=True)
 URL_RE = re.compile(r"https?://\S+")
@@ -40,6 +41,14 @@ def load_users():
 
 def save_users(users):
     USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def load_invites():
+    return json.loads(INVITES_FILE.read_text(encoding="utf-8")) if INVITES_FILE.exists() else []
+
+
+def save_invites(invites):
+    INVITES_FILE.write_text(json.dumps(invites), encoding="utf-8")
 
 
 def hash_pw(password, salt):
@@ -496,6 +505,22 @@ class Handler(BaseHTTPRequestHandler):
                 songs_path(target).unlink(missing_ok=True)
                 save_users(users)
             return self.reply(200, "Konto gelöscht")
+        if path == "/admin/create-invite":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            key = secrets.token_urlsafe(6)
+            with USERS_LOCK:
+                save_invites(load_invites() + [key])
+            return self.reply(200, json.dumps({
+                "key": key, "link": f"https://tiktok.xsyntachs.de/?invite={key}",
+            }), "application/json")
+        if path == "/admin/delete-invite":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            key = self.body().strip()
+            with USERS_LOCK:
+                save_invites([k for k in load_invites() if k != key])
+            return self.reply(200, "Einladung gelöscht")
         if path == "/admin/reset-password":
             if not load_users().get(username, {}).get("admin"):
                 return self.reply(403, "Kein Admin")
@@ -532,6 +557,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/register":
                 if name in users:
                     return self.reply(409, "Benutzername vergeben")
+                invite = str(data.get("invite", "")).strip()
+                invites = load_invites()
+                # Allererstes Konto (leere users.json) braucht keinen Key, sonst sperrt man sich aus
+                if users:
+                    if invite not in invites:
+                        return self.reply(403, "Einladungs-Key ungültig. Frag einen Admin nach einer Einladung.")
+                    invites.remove(invite)
+                    save_invites(invites)
                 salt = secrets.token_hex(16)
                 token = secrets.token_hex(24)
                 users[name] = {"salt": salt, "hash": hash_pw(password, salt), "token": token}
@@ -591,6 +624,10 @@ class Handler(BaseHTTPRequestHandler):
             overview = [{"name": name, "admin": bool(info.get("admin")),
                          "songs": len(load_songs(name))} for name, info in sorted(load_users().items())]
             return self.reply(200, json.dumps({"users": overview}, ensure_ascii=False), "application/json")
+        if path == "/admin/invites":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            return self.reply(200, json.dumps({"invites": load_invites()}), "application/json")
         if path == "/recommendations":
             try:
                 tracks = recommendations(username)
