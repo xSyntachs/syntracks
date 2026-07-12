@@ -109,7 +109,16 @@ ORIGINAL_NON_LATIN = {"الصوت الأصلي", "оригинальный зв�
 
 
 def is_original_sound(track):
-    return not track or "origin" in track.lower() or track in ORIGINAL_NON_LATIN
+    low = (track or "").lower()
+    return not track or "origin" in low or "orijinal" in low or track in ORIGINAL_NON_LATIN
+
+
+EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF⬀-⯿️‍]+")
+
+
+def strip_emoji(text):
+    return EMOJI_RE.sub("", text or "").strip() or None
 
 
 def extract(url):
@@ -119,12 +128,12 @@ def extract(url):
         errors = run.stderr.strip().splitlines()
         raise RuntimeError(errors[-1] if errors else "yt-dlp ohne Fehlermeldung")
     meta = json.loads(run.stdout)
-    track = meta.get("track")
+    track = strip_emoji(meta.get("track"))
     return {
         "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "track": track,
         "original": is_original_sound(track),
-        "artist": meta.get("artist") or meta.get("uploader"),
+        "artist": strip_emoji(meta.get("artist") or meta.get("uploader")),
         "title": meta.get("title"),
         "url": meta.get("webpage_url") or url,
     }
@@ -157,12 +166,12 @@ def download_full(match):
     if path.exists():
         return path
     name = song_name(match)
-    # Original-Sounds sind oft Slowed/Remix-Fassungen, Shazam mappt die aufs Original-Release.
-    # Volllänge daher immer die Fassung aus dem Video selbst, YouTube nur für offizielle TikTok-Songs.
-    if match.get("original", is_original_sound(match["track"])):
-        source = match["url"]
-    else:
+    # Erkannte Tracks existieren als echtes Release, da liefert YouTube die volle Länge der exakten
+    # Version. Nur unerkannte und Caption-Sounds haben kein Release, da bleibt das TikTok-Audio.
+    if match.get("recognized") or not match.get("original", is_original_sound(match["track"])):
         source = f'ytsearch1:"{name}" {match["artist"]}'
+    else:
+        source = match["url"]
     with tempfile.TemporaryDirectory() as tmp:
         run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3", "--no-playlist",
                               "-o", f"{tmp}/full.%(ext)s", source],
@@ -408,11 +417,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(400, "Kein JSON")
             append_song(username, {
                 "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "track": track.get("track"), "original": False, "similar": True,
+                "track": track.get("track"), "original": False, "similar": True, "favorite": True,
                 "artist": track.get("artist"), "title": None, "url": track.get("url") or "",
                 "preview": track.get("preview"), "artwork": track.get("artwork"),
             })
-            return self.reply(200, "Empfehlung gespeichert")
+            return self.reply(200, "Zu Favoriten hinzugefügt")
+        if path == "/favorite":
+            try:
+                data = json.loads(self.body())
+                saved_at, value = str(data["saved_at"]), bool(data["value"])
+            except (ValueError, KeyError):
+                return self.reply(400, "saved_at und value nötig")
+            updated = [{**s, "favorite": value} if s["saved_at"] == saved_at else s
+                       for s in load_songs(username)]
+            with FILE_LOCK:
+                songs_path(username).write_text(
+                    "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in updated), encoding="utf-8")
+            return self.reply(200, "Favorit aktualisiert")
         if path == "/delete":
             saved_at = self.body().strip()
             remaining = [s for s in load_songs(username) if s["saved_at"] != saved_at]
@@ -521,6 +542,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/":
             return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"), "text/html; charset=utf-8")
+        if path == "/styles.css":
+            return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"), "text/css; charset=utf-8")
+        if path == "/app.js":
+            return self.reply(200, (BASE / "app.js").read_text(encoding="utf-8"),
+                              "application/javascript; charset=utf-8")
         if path == "/extension.zip" and (BASE / "extension.zip").exists():
             data = (BASE / "extension.zip").read_bytes()
             return self.send_file(data, "application/zip", "tiktok_songs_extension.zip")

@@ -48,6 +48,8 @@ object Api {
     fun add(sharedText: String) = request("POST", "/add", sharedText)
     fun songs() = request("GET", "/songs")
     fun delete(savedAt: String) = request("POST", "/delete", savedAt)
+    fun favorite(savedAt: String, value: Boolean) =
+        request("POST", "/favorite", JSONObject().put("saved_at", savedAt).put("value", value).toString())
     fun similar(key: String) = request("GET", "/similar?id=$key")
     fun recommendations() = request("GET", "/recommendations")
     fun saveSimilar(trackJson: String) = request("POST", "/save-similar", trackJson)

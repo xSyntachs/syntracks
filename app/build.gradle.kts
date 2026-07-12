@@ -12,8 +12,8 @@ android {
         applicationId = "de.xsyntachs.tiktoksongs"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "3.5"
+        versionCode = 21
+        versionName = "3.6"
     }
 
     signingConfigs {

@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -135,6 +136,7 @@ data class Song(
     val clip: String,
     val artwork: String?,
     val genre: String?,
+    val favorite: Boolean,
     val source: Source,
 ) {
     enum class Source(val label: String, val filter: String) {
@@ -188,6 +190,7 @@ private fun parseFeed(raw: String): Feed {
                 clip = s.optString("clip"),
                 artwork = s.optString("artwork").takeIf { it.isNotBlank() && it != "null" },
                 genre = s.optString("genre").takeIf { it.isNotBlank() && it != "null" },
+                favorite = s.optBoolean("favorite"),
                 source = when {
                     s.optBoolean("similar") -> Song.Source.SIMILAR
                     s.optBoolean("recognized") -> Song.Source.SHAZAM
@@ -467,6 +470,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     var query by remember { mutableStateOf("") }
     var searching by remember { mutableStateOf(false) }
     var sourceFilter by remember { mutableStateOf<Song.Source?>(null) }
+    var favFilter by remember { mutableStateOf(false) }
     var playProgress by remember { mutableFloatStateOf(0f) }
     var similarFor by remember { mutableStateOf<Song?>(null) }
     var similarTracks by remember { mutableStateOf<List<SimilarTrack>?>(null) }
@@ -546,10 +550,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     val songs = feed?.songs.orEmpty().filter { it.savedAt !in hidden }
-    val shown = songs.filter { song ->
-        // "Alle" blendet Empfehlungen aus, die stehen nur unter ihrem eigenen Filter
-        (if (sourceFilter == null) song.source != Song.Source.SIMILAR else song.source == sourceFilter) &&
-            (query.isBlank() || song.name.contains(query, true) || song.artist.contains(query, true))
+    // Empfehlungs-Tab zeigt nur den Für-dich-Block, gespeicherte Empfehlungen leben unter Favoriten
+    val shown = if (sourceFilter == Song.Source.SIMILAR) emptyList() else songs.filter { song ->
+        when {
+            favFilter -> song.favorite
+            sourceFilter == null -> song.source != Song.Source.SIMILAR
+            else -> song.source == sourceFilter
+        } && (query.isBlank() || song.name.contains(query, true) || song.artist.contains(query, true))
     }
 
     fun deleteWithUndo(song: Song) {
@@ -626,9 +633,12 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             } ?: Text("lädt…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SourceChip("Alle", sourceFilter == null) { sourceFilter = null }
+                SourceChip("Alle", sourceFilter == null && !favFilter) { sourceFilter = null; favFilter = false }
+                SourceChip("Favoriten", favFilter) { favFilter = true; sourceFilter = null }
                 Song.Source.entries.forEach { source ->
-                    SourceChip(source.filter, sourceFilter == source) {
+                    SourceChip(if (source == Song.Source.SIMILAR) "Empfehlungen" else source.filter,
+                        sourceFilter == source) {
+                        favFilter = false
                         sourceFilter = if (sourceFilter == source) null else source
                     }
                 }
@@ -676,6 +686,14 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     },
                     onPlayFull = { song -> clipPlayer.play(song.clip, Api.fullUrl(song.clip)) },
                     onSimilar = { similarFor = it },
+                    onFavorite = { song ->
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                runCatching { Api.favorite(song.savedAt, !song.favorite) }
+                            }
+                            tick++
+                        }
+                    },
                     onDelete = { deleteWithUndo(it) },
                     onSaveRec = { track ->
                         scope.launch {
@@ -741,6 +759,7 @@ private fun SongList(
     onVolume: (Float) -> Unit,
     onPlayFull: (Song) -> Unit,
     onSimilar: (Song) -> Unit,
+    onFavorite: (Song) -> Unit,
     onDelete: (Song) -> Unit,
     onSaveRec: (SimilarTrack) -> Unit,
 ) {
@@ -822,6 +841,7 @@ private fun SongList(
                     onPlay = { clipPlayer.toggle(song.clip) },
                     onPlayFull = { onPlayFull(song) },
                     onSimilar = { onSimilar(song) },
+                    onFavorite = { onFavorite(song) },
                     onDelete = { onDelete(song) },
                 )
             }
@@ -1234,8 +1254,6 @@ private fun EmptyState(filtered: Boolean) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("♪", fontSize = 48.sp, color = Scheme.onSurfaceVariant)
-        Spacer(Modifier.height(8.dp))
         Text(
             if (filtered) "Nichts gefunden." else "Noch keine Songs.\nTeile ein TikTok-Video mit dieser App.",
             color = Scheme.onSurfaceVariant,
@@ -1298,7 +1316,7 @@ private fun CoverButton(song: Song, buffering: Boolean?, accent: Color, onPlay: 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: Float, onVolume: (Float) -> Unit, onSeek: (Float) -> Unit, onPlay: () -> Unit, onPlayFull: () -> Unit, onSimilar: () -> Unit, onDelete: () -> Unit) {
+private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: Float, onVolume: (Float) -> Unit, onSeek: (Float) -> Unit, onPlay: () -> Unit, onPlayFull: () -> Unit, onSimilar: () -> Unit, onFavorite: () -> Unit, onDelete: () -> Unit) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
@@ -1347,6 +1365,10 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                                 color = Color.White.copy(alpha = 0.9f),
                             )
                         }
+                        if (song.favorite) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Default.Star, "Favorit", tint = Gold, modifier = Modifier.size(13.dp))
+                        }
                         Spacer(Modifier.width(6.dp))
                         Text(relativeTime(song.savedAt), fontSize = 11.sp, color = Scheme.onSurfaceVariant)
                     }
@@ -1375,6 +1397,13 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                                 menuOpen = false
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(song.url)))
                             },
+                        )
+
+                        MenuHeader("Sammlung")
+                        DropdownMenuItem(
+                            text = { Text(if (song.favorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen") },
+                            leadingIcon = { Icon(Icons.Default.Star, null) },
+                            onClick = { menuOpen = false; onFavorite() },
                         )
 
                         if (!isOriginal) {
@@ -1455,12 +1484,8 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
             AnimatedVisibility(buffering == false, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
                     SlimSlider(progress, onSeek, accent, accent)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🔊", fontSize = 10.sp)
-                        Spacer(Modifier.width(6.dp))
-                        Box(Modifier.weight(1f)) {
-                            SlimSlider(volume, onVolume, Color.White, Color.White.copy(alpha = 0.6f))
-                        }
+                    Box(Modifier.fillMaxWidth(0.45f)) {
+                        SlimSlider(volume, onVolume, Color.White, Color.White.copy(alpha = 0.6f))
                     }
                 }
             }
