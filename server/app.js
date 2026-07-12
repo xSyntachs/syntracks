@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 let token = localStorage.getItem("token");
 let userName = localStorage.getItem("user") || "";
-let isAdmin = false, songs = [], lastPending = [], filter = "ALLE", registerMode = false;
+let isAdmin = false, songs = [], lastPending = [], filter = "ALLE", view = "SONGS", registerMode = false;
 let playing = null, pollTimer = null;
 
 const audio = new Audio();
@@ -25,8 +25,9 @@ const SOURCES = {
   SIMILAR: { label: "Empfehlung", color: "rgba(76,217,100,.45)" },
   ORIGINAL:{ label: "Nicht erkannt", color: "rgba(255,255,255,.18)" },
 };
-const FILTER_LABEL = { ALLE: "Alle", FAV: "Favoriten", TIKTOK: "Offiziell", SHAZAM: "Shazam",
-                       CAPTION: "Aus Caption", SIMILAR: "Empfehlungen", ORIGINAL: "Original" };
+const FILTER_LABEL = { ALLE: "Alle", TIKTOK: "Offiziell", SHAZAM: "Shazam",
+                       CAPTION: "Aus Caption", ORIGINAL: "Original" };
+const VIEWS = { SONGS: "Songs", FAV: "Favoriten", RECS: "Empfehlungen" };
 const STAGE_PROGRESS = { "Wartet": 10, "Video wird geladen": 40, "Song wird erkannt": 75, "Wird gespeichert": 95 };
 
 const sourceOf = (s) => s.similar ? "SIMILAR" : s.recognized ? "SHAZAM" : s.from_caption ? "CAPTION"
@@ -140,16 +141,22 @@ function schedulePoll() {
 function renderStats() {
   $("stats").innerHTML =
     `<button class="taste-btn" id="taste">${IC.note} Dein Geschmack</button>` +
-    `<span class="chip click ${filter !== "ALLE" ? "active" : ""}" id="filter-btn">Filter: ${FILTER_LABEL[filter]}</span>`;
+    (view === "SONGS"
+      ? `<span class="chip click ${filter !== "ALLE" ? "active" : ""}" id="filter-btn">Filter: ${FILTER_LABEL[filter]}</span>`
+      : "");
   $("taste").onclick = openTaste;
-  $("filter-btn").onclick = (ev) => {
+  const filterBtn = $("filter-btn");
+  if (filterBtn) filterBtn.onclick = (ev) => {
     ev.stopPropagation();
     closeMenu();
     const items = Object.keys(FILTER_LABEL).map(f =>
       [FILTER_LABEL[f] + (f === filter ? "  ✓" : ""), () => { filter = f; renderStats(); render(); }]);
-    anchorMenu(buildMenu(items), $("filter-btn"));
+    anchorMenu(buildMenu(items), filterBtn);
   };
-  $("filters").innerHTML = "";
+  $("filters").innerHTML = Object.keys(VIEWS).map(v =>
+    `<span class="tab ${v === view ? "active" : ""}" data-v="${v}">${VIEWS[v]}</span>`).join("");
+  document.querySelectorAll("#filters .tab").forEach(el =>
+    el.onclick = () => { view = el.dataset.v; renderStats(); render(); });
 }
 
 /* ---------- Empfehlungen ---------- */
@@ -166,11 +173,13 @@ async function loadRecs() {
 /* ---------- Rendern ---------- */
 function render() {
   const q = $("search").value.toLowerCase();
-  const shown = filter === "SIMILAR" ? [] : songs.filter(s => {
+  const shown = view === "RECS" ? [] : songs.filter(s => {
     const src = sourceOf(s);
-    if (filter === "ALLE" && src === "SIMILAR") return false;
-    if (filter === "FAV" && !s.favorite) return false;
-    if (filter !== "ALLE" && filter !== "FAV" && src !== filter) return false;
+    if (view === "FAV") { if (!s.favorite) return false; }
+    else {
+      if (src === "SIMILAR") return false;
+      if (filter !== "ALLE" && src !== filter) return false;
+    }
     return !q || (s.name || "").toLowerCase().includes(q) || (s.artist || "").toLowerCase().includes(q);
   });
   let html = "";
@@ -183,7 +192,7 @@ function render() {
       <div class="pendbar"><div style="width:${STAGE_PROGRESS[stage] || 10}%"></div></div>
     </div>`;
   }
-  if (filter === "SIMILAR") {
+  if (view === "RECS") {
     if (recs === null && !recsLoading) loadRecs();
     html += `<div class="pendcard"><b style="font-size:14px">Für dich</b>
       <div class="sub" style="margin-bottom:10px">Auf Basis deiner letzten Songs</div>`;
@@ -199,7 +208,7 @@ function render() {
         : `<div class="sub">Gerade keine neuen Empfehlungen.</div>`;
     html += `</div>`;
   }
-  if (!shown.length && !lastPending.length && filter !== "SIMILAR") {
+  if (!shown.length && !lastPending.length && view !== "RECS") {
     html += `<div class="sub" style="padding:56px 0;text-align:center;font-size:15px">Nichts gefunden.</div>`;
   }
   html += shown.map(s => {

@@ -110,7 +110,8 @@ ORIGINAL_NON_LATIN = {"الصوت الأصلي", "оригинальный зв�
 
 def is_original_sound(track):
     low = (track or "").lower()
-    return not track or "origin" in low or "orijinal" in low or track in ORIGINAL_NON_LATIN
+    return (not track or "origin" in low or "orijinal" in low or "suara asli" in low
+            or "ses asli" in low or track in ORIGINAL_NON_LATIN)
 
 
 EMOJI_RE = re.compile(
@@ -346,10 +347,12 @@ def worker():
 
 
 class Handler(BaseHTTPRequestHandler):
-    def reply(self, code, text, content_type="text/plain; charset=utf-8"):
+    def reply(self, code, text, content_type="text/plain; charset=utf-8", no_store=False):
         body = text.encode()
         self.send_response(code)
         self.send_header("Content-Type", content_type)
+        if no_store:
+            self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -544,13 +547,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        # no_store, sonst kleben Browser und Cloudflare auf alten UI-Ständen fest
         if path == "/":
-            return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"), "text/html; charset=utf-8")
+            return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"),
+                              "text/html; charset=utf-8", no_store=True)
         if path == "/styles.css":
-            return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"), "text/css; charset=utf-8")
+            return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"),
+                              "text/css; charset=utf-8", no_store=True)
         if path == "/app.js":
             return self.reply(200, (BASE / "app.js").read_text(encoding="utf-8"),
-                              "application/javascript; charset=utf-8")
+                              "application/javascript; charset=utf-8", no_store=True)
         if path == "/extension.zip" and (BASE / "extension.zip").exists():
             data = (BASE / "extension.zip").read_bytes()
             return self.send_file(data, "application/zip", "tiktok_songs_extension.zip")

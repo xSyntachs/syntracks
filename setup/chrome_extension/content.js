@@ -49,7 +49,7 @@ function injectButtons() {
     if (!wrapper || wrapper.parentElement.querySelector(".tts-save")) return;
     const holder = document.createElement("div");
     holder.className = "tts-save";
-    holder.style.cssText = "display:flex;justify-content:center;margin-top:8px";
+    holder.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px";
     const btn = document.createElement("button");
     btn.title = "Song speichern (TikTok Songs)";
     btn.style.cssText = `width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;
@@ -57,7 +57,12 @@ function injectButtons() {
       background:linear-gradient(135deg,#FE2C55,#7828C8)`;
     btn.innerHTML = NOTE_SVG;
     btn.onclick = (e) => { e.stopPropagation(); saveVideo(btn); };
+    const label = document.createElement("span");
+    label.textContent = "Song speichern";
+    label.style.cssText = `font: 700 11px/1.15 system-ui; color: rgba(255,255,255,.9);
+      text-align:center; max-width:56px`;
     holder.appendChild(btn);
+    holder.appendChild(label);
     wrapper.parentElement.insertBefore(holder, wrapper.nextSibling);
   });
 }

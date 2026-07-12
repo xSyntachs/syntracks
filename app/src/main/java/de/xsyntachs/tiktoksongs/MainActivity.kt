@@ -478,7 +478,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     var query by remember { mutableStateOf("") }
     var searching by remember { mutableStateOf(false) }
     var sourceFilter by remember { mutableStateOf<Song.Source?>(null) }
-    var favFilter by remember { mutableStateOf(false) }
+    var view by remember { mutableStateOf("SONGS") }
     var playProgress by remember { mutableFloatStateOf(0f) }
     var similarFor by remember { mutableStateOf<Song?>(null) }
     var similarTracks by remember { mutableStateOf<List<SimilarTrack>?>(null) }
@@ -549,8 +549,8 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             }.getOrDefault(emptyList())
         }
     }
-    LaunchedEffect(sourceFilter) {
-        if (sourceFilter == Song.Source.SIMILAR && recs == null) {
+    LaunchedEffect(view) {
+        if (view == "RECS" && recs == null) {
             recs = runCatching {
                 withContext(Dispatchers.IO) { parseSimilar(Api.recommendations(), "recommendations") }
             }.getOrDefault(emptyList())
@@ -558,12 +558,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     val songs = feed?.songs.orEmpty().filter { it.savedAt !in hidden }
-    // Empfehlungs-Tab zeigt nur den Für-dich-Block, gespeicherte Empfehlungen leben unter Favoriten
-    val shown = if (sourceFilter == Song.Source.SIMILAR) emptyList() else songs.filter { song ->
+    // Spotify-Prinzip: Songs / Favoriten / Empfehlungen als Bereiche, der Filter regelt nur Quellen
+    val shown = if (view == "RECS") emptyList() else songs.filter { song ->
         when {
-            favFilter -> song.favorite
-            sourceFilter == null -> song.source != Song.Source.SIMILAR
-            else -> song.source == sourceFilter
+            view == "FAV" -> song.favorite
+            song.source == Song.Source.SIMILAR -> false
+            sourceFilter != null -> song.source == sourceFilter
+            else -> true
         } && (query.isBlank() || song.name.contains(query, true) || song.artist.contains(query, true))
     }
 
@@ -633,23 +634,33 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 ) {
                     Text("Dein Geschmack", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
-                Box {
-                    var filterMenu by remember { mutableStateOf(false) }
-                    val currentLabel = when {
-                        favFilter -> "Favoriten"
-                        sourceFilter != null -> sourceFilter!!.filter
-                        else -> "Alle"
-                    }
-                    SourceChip("Filter: $currentLabel", favFilter || sourceFilter != null) { filterMenu = true }
-                    DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
-                        DropdownMenuItem(text = { Text("Alle") },
-                            onClick = { filterMenu = false; favFilter = false; sourceFilter = null })
-                        DropdownMenuItem(text = { Text("Favoriten") },
-                            onClick = { filterMenu = false; favFilter = true; sourceFilter = null })
-                        Song.Source.entries.forEach { source ->
-                            DropdownMenuItem(text = { Text(source.filter) },
-                                onClick = { filterMenu = false; favFilter = false; sourceFilter = source })
+                if (view == "SONGS") {
+                    Box {
+                        var filterMenu by remember { mutableStateOf(false) }
+                        SourceChip("Filter: ${sourceFilter?.filter ?: "Alle"}", sourceFilter != null) { filterMenu = true }
+                        DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
+                            DropdownMenuItem(text = { Text("Alle") },
+                                onClick = { filterMenu = false; sourceFilter = null })
+                            Song.Source.entries.filter { it != Song.Source.SIMILAR }.forEach { source ->
+                                DropdownMenuItem(text = { Text(source.filter) },
+                                    onClick = { filterMenu = false; sourceFilter = source })
+                            }
                         }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                listOf("SONGS" to "Songs", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
+                    Column(
+                        Modifier.clickable { view = key },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                            color = if (view == key) Scheme.onBackground else Scheme.onSurfaceVariant)
+                        Spacer(Modifier.height(5.dp))
+                        Box(Modifier.height(2.dp).width(28.dp)
+                            .background(if (view == key) Pink else Color.Transparent, RoundedCornerShape(1.dp)))
                     }
                 }
             }
@@ -684,7 +695,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     shown = shown,
                     recs = recs,
                     savedRecs = savedRecs,
-                    showRecs = sourceFilter == Song.Source.SIMILAR,
+                    showRecs = view == "RECS",
                     clipPlayer = clipPlayer,
                     playProgress = playProgress,
                     filtered = query.isNotBlank() || sourceFilter != null,

@@ -93,6 +93,11 @@ h1 { font-size: clamp(28px, 4vw, 38px); }
 .taste-btn:hover { filter: brightness(1.2); }
 .taste-btn:active { transform: scale(.97); }
 .taste-btn svg { width: 15px; height: 15px; }
+.tab { font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer;
+       padding: 4px 2px 8px; border-bottom: 2px solid transparent; transition: color .15s; }
+.tab:hover { color: #fff; }
+.tab.active { color: #fff; border-color: var(--pink); }
+#filters { gap: var(--s3); }
 #search { margin-bottom: var(--s3); }
 #list { flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-card);
         padding: var(--s2); background: rgba(0,0,0,.28);
