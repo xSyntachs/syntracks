@@ -73,6 +73,8 @@ object Api {
     fun adminDeleteUser(name: String) = request("POST", "/admin/delete-user", name)
     fun adminResetPassword(name: String, new: String) =
         request("POST", "/admin/reset-password", JSONObject().put("user", name).put("new", new).toString())
+    fun adminUserSongs(name: String) = request("GET", "/admin/user-songs?user=$name")
+    fun adminUserRecommendations(name: String) = request("GET", "/admin/user-recommendations?user=$name")
     fun adminInvites() = request("GET", "/admin/invites")
     fun adminCreateInvite() = request("POST", "/admin/create-invite")
     fun adminDeleteInvite(key: String) = request("POST", "/admin/delete-invite", key)

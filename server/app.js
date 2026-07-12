@@ -459,19 +459,27 @@ async function openAdmin() {
       invites = (await (await api("/admin/invites")).json()).invites;
     }
     catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
-    m.el.querySelector(".body").innerHTML = users.map(u => `<div class="mrow">
+    m.el.querySelector(".body").innerHTML = users.map(u => `<div class="adm-row">
+      <div class="adm-av">${esc(u.name[0])}</div>
       <div class="meta"><b style="color:${u.admin ? "var(--cyan)" : "inherit"}">@${esc(u.name)}${u.admin ? " · Admin" : ""}</b>
         <span class="artist">${u.songs} Songs</span></div>
-      <button class="add" style="font-size:13px" data-rp2="${esc(u.name)}">Passwort</button>
-      ${u.name !== userName ? `<button class="add" style="color:var(--pink);font-size:13px" data-du="${esc(u.name)}">Löschen</button>` : ""}
+      <div class="adm-actions">
+        <button class="adm-btn cyan" data-vu="${esc(u.name)}">Ansehen</button>
+        <button class="adm-btn" data-rp2="${esc(u.name)}">Passwort</button>
+        ${u.name !== userName ? `<button class="adm-btn danger" data-du="${esc(u.name)}">Löschen</button>` : ""}
+      </div>
     </div>`).join("") + `
-    <div class="sub" style="margin-top:16px">Einladungen (jeder Key gilt für ein Konto)</div>
-    ${invites.map(k => `<div class="mrow">
-      <div class="meta"><b>${esc(k)}</b></div>
-      <button class="add" style="font-size:13px" data-ci="${esc(k)}">Link kopieren</button>
-      <button class="add" style="color:var(--pink);font-size:13px" data-di="${esc(k)}">Löschen</button>
+    <div class="sub" style="margin-top:14px">Einladungen (jeder Key gilt für ein Konto)</div>
+    ${invites.map(k => `<div class="adm-row">
+      <div class="adm-av key"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="8" cy="14" r="4"/><path d="M11 11 20 2m-4 1 3 3"/></svg></div>
+      <div class="meta"><b class="adm-key">${esc(k)}</b><span class="artist">Noch nicht eingelöst</span></div>
+      <div class="adm-actions">
+        <button class="adm-btn cyan" data-ci="${esc(k)}">Link kopieren</button>
+        <button class="adm-btn danger" data-di="${esc(k)}">Löschen</button>
+      </div>
     </div>`).join("")}
     <button class="btn-primary" id="new-invite" style="margin-top:10px">Einladungs-Key erstellen</button>`;
+    m.el.querySelectorAll("[data-vu]").forEach(el => el.onclick = () => openUserLibrary(el.dataset.vu));
     m.el.querySelector("#new-invite").onclick = async () => {
       const created = await (await api("/admin/create-invite", { method: "POST" })).json();
       await navigator.clipboard.writeText(created.link).catch(() => {});
@@ -510,6 +518,44 @@ async function openAdmin() {
     });
   }
   refresh();
+}
+
+async function openUserLibrary(name) {
+  const m = modal(`Sammlung von @${esc(name)}`, `<div class="sub">Lädt…</div>`);
+  let songs;
+  try { songs = (await (await api(`/admin/user-songs?user=${encodeURIComponent(name)}`)).json()).songs; }
+  catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  let recs = null, tab = "VERLAUF";
+  const badge = s => s.similar ? "Empfehlung" : s.recognized ? "Per Shazam erkannt"
+    : s.from_caption ? "Aus Caption gelesen" : s.original ? "Nicht erkannt" : "Offizieller Song";
+  const songRow = s => `<div class="mrow">
+    ${s.artwork ? `<img class="cover" src="${esc(s.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
+    <div class="meta"><b>${esc(s.name)}${s.favorite ? ` <span style="color:var(--gold)">★</span>` : ""}</b>
+      <span class="artist">${esc(s.artist || "Unbekannt")} · ${badge(s)}</span></div>
+  </div>`;
+  const recRow = t => `<div class="mrow">
+    ${t.artwork ? `<img class="cover" src="${esc(t.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
+    <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist || "Unbekannt")}</span></div>
+  </div>`;
+  async function render() {
+    let rows;
+    if (tab === "RECS") {
+      if (!recs) {
+        try { recs = (await (await api(`/admin/user-recommendations?user=${encodeURIComponent(name)}`)).json()).recommendations; }
+        catch { recs = []; }
+      }
+      rows = recs.length ? recs.map(recRow).join("") : `<div class="sub">Keine Empfehlungen</div>`;
+    } else {
+      const list = tab === "FAV" ? songs.filter(s => s.favorite) : songs;
+      rows = list.length ? list.map(songRow).join("") : `<div class="sub">Nichts vorhanden</div>`;
+    }
+    m.el.querySelector(".body").innerHTML = `<div class="libtabs">
+      ${[["VERLAUF", "Song Verlauf"], ["FAV", "Favoriten"], ["RECS", "Empfehlungen"]].map(([k, label]) =>
+        `<span class="tab${tab === k ? " active" : ""}" data-lt="${k}">${label}</span>`).join("")}
+    </div>` + rows;
+    m.el.querySelectorAll("[data-lt]").forEach(el => el.onclick = () => { tab = el.dataset.lt; render(); });
+  }
+  render();
 }
 
 /* ---------- Auth ---------- */

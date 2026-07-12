@@ -73,19 +73,22 @@ def clip_key(url):
 
 
 def download_clip(url):
-    path = CLIPS / f"{clip_key(url)}.mp3"
-    if path.exists():
-        return path
-    with tempfile.TemporaryDirectory() as tmp:
-        run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3",
-                              "-o", f"{tmp}/clip.%(ext)s", url],
-                             capture_output=True, text=True, timeout=120)
-        if run.returncode != 0:
-            raise RuntimeError("Audio-Download fehlgeschlagen")
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{tmp}/clip.mp3",
-                        "-t", "25", "-codec:a", "copy", str(path)],
+    """Lädt das volle TikTok-Audio (für Shazam) und schneidet daraus den 25-s-Preview-Clip."""
+    preview = CLIPS / f"{clip_key(url)}.mp3"
+    audio = CLIPS / f"audio_{clip_key(url)}.mp3"
+    if not audio.exists():
+        with tempfile.TemporaryDirectory() as tmp:
+            run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3",
+                                  "-o", f"{tmp}/clip.%(ext)s", url],
+                                 capture_output=True, text=True, timeout=120)
+            if run.returncode != 0:
+                raise RuntimeError("Audio-Download fehlgeschlagen")
+            shutil.move(f"{tmp}/clip.mp3", audio)
+    if not preview.exists():
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(audio),
+                        "-t", "25", "-codec:a", "copy", str(preview)],
                        capture_output=True, timeout=60, check=True)
-    return path
+    return audio
 
 
 def download_video(url):
@@ -149,25 +152,37 @@ def extract(url):
     }
 
 
+def audio_duration(path):
+    probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                            "-of", "csv=p=0", str(path)], capture_output=True, text=True, timeout=30)
+    try:
+        return float(probe.stdout.strip())
+    except ValueError:
+        return 0.0
+
+
 def recognize(clip):
+    # Das Lied liegt nicht immer am Anfang, also mehrere Stellen des Videos probieren.
+    # loudnorm zieht leise hinterlegte Musik hoch, sonst matcht Shazam Voiceover-Videos nicht.
+    duration = audio_duration(clip)
+    offsets = [0.0] if duration <= 30 else sorted({0.0, duration * 0.35, duration * 0.7, max(0.0, duration - 22)})
     with tempfile.TemporaryDirectory() as tmp:
-        variants = [str(clip)]
         # Slowed-Versionen sind auch pitch-verschoben, asetrate kehrt beides um (atempo allein reicht nicht)
-        for i, rate in enumerate((1.25, 1.4, 0.8)):
-            out = f"{tmp}/v{i}.mp3"
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(clip),
-                            "-af", f"asetrate=44100*{rate},aresample=44100", out],
-                           capture_output=True, timeout=60)
-            variants.append(out)
-        for candidate in variants:
-            match = asyncio.run(Shazam().recognize(candidate)).get("track")
-            if match:
-                hit = {"track": match["title"], "artist": match["subtitle"], "recognized": True}
-                # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht findet
-                uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
-                hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
-                hit["artwork"] = (match.get("images") or {}).get("coverart")
-                return {k: v for k, v in hit.items() if v is not None}
+        for rate in (1.0, 1.25, 1.4, 0.8):
+            for offset in offsets:
+                candidate = f"{tmp}/r{rate}o{int(offset)}.mp3"
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(offset), "-t", "22",
+                                "-i", str(clip),
+                                "-af", f"asetrate=44100*{rate},aresample=44100,loudnorm", candidate],
+                               capture_output=True, timeout=60)
+                match = asyncio.run(Shazam().recognize(candidate)).get("track")
+                if match:
+                    hit = {"track": match["title"], "artist": match["subtitle"], "recognized": True}
+                    # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht findet
+                    uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
+                    hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
+                    hit["artwork"] = (match.get("images") or {}).get("coverart")
+                    return {k: v for k, v in hit.items() if v is not None}
     return None
 
 
@@ -320,6 +335,14 @@ def append_song(username, entry):
 
 def find_song(username, key):
     return next((s for s in load_songs(username) if clip_key(s["url"]) == key), None)
+
+
+def songs_payload(username):
+    songs = [{**s, "original": s.get("original", is_original_sound(s["track"])),
+              "name": song_name(s), "clip": clip_key(s["url"])} for s in reversed(load_songs(username))]
+    pending = [{"url": u, **info} for u, info in PENDING[username].items()]
+    return {"user": username, "admin": bool(load_users().get(username, {}).get("admin")),
+            "pending": pending, "songs": songs}
 
 
 def worker():
@@ -610,14 +633,26 @@ class Handler(BaseHTTPRequestHandler):
         if not username:
             return self.reply(401, "Nicht angemeldet")
         if path == "/songs":
-            songs = [{**s, "original": s.get("original", is_original_sound(s["track"])),
-                      "name": song_name(s), "clip": clip_key(s["url"])} for s in reversed(load_songs(username))]
-            pending = [{"url": u, **info} for u, info in PENDING[username].items()]
-            return self.reply(200, json.dumps({
-                "user": username,
-                "admin": bool(load_users().get(username, {}).get("admin")),
-                "pending": pending, "songs": songs,
-            }, ensure_ascii=False), "application/json")
+            return self.reply(200, json.dumps(songs_payload(username), ensure_ascii=False), "application/json")
+        if path == "/admin/user-songs":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            target = (parse_qs(urlsplit(self.path).query).get("user") or [""])[0]
+            if target not in load_users():
+                return self.reply(404, "Unbekannter Nutzer")
+            return self.reply(200, json.dumps(songs_payload(target), ensure_ascii=False), "application/json")
+        if path == "/admin/user-recommendations":
+            if not load_users().get(username, {}).get("admin"):
+                return self.reply(403, "Kein Admin")
+            target = (parse_qs(urlsplit(self.path).query).get("user") or [""])[0]
+            if target not in load_users():
+                return self.reply(404, "Unbekannter Nutzer")
+            try:
+                tracks = recommendations(target)
+            except Exception as e:
+                return self.reply(502, f"Empfehlungen nicht verfügbar: {e}")
+            return self.reply(200, json.dumps({"recommendations": tracks}, ensure_ascii=False),
+                              "application/json")
         if path == "/admin/users":
             if not load_users().get(username, {}).get("admin"):
                 return self.reply(403, "Kein Admin")

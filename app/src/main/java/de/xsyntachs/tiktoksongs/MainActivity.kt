@@ -1081,6 +1081,7 @@ private fun AdminOverlay(onClose: () -> Unit) {
     var invites by remember { mutableStateOf<List<String>>(emptyList()) }
     var reload by remember { mutableIntStateOf(0) }
     var resetFor by remember { mutableStateOf<String?>(null) }
+    var viewFor by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -1108,6 +1109,11 @@ private fun AdminOverlay(onClose: () -> Unit) {
                 (0 until arr.length()).map { arr.getString(it) }
             }
         }.getOrDefault(emptyList())
+    }
+
+    viewFor?.let { target ->
+        UserLibraryOverlay(target, onClose = { viewFor = null })
+        return
     }
 
     resetFor?.let { target ->
@@ -1140,23 +1146,24 @@ private fun AdminOverlay(onClose: () -> Unit) {
                 Spacer(Modifier.width(10.dp))
                 Text("Lädt…", color = Scheme.onSurfaceVariant)
             }
-            else -> LazyColumn(Modifier.fillMaxWidth().height(400.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            else -> LazyColumn(Modifier.fillMaxWidth().height(440.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(list, key = { it.first }) { (name, admin, count) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                        Column(Modifier.weight(1f)) {
-                            Text(if (admin) "@$name · Admin" else "@$name",
-                                fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                                color = if (admin) Cyan else Scheme.onSurface)
-                            Text("$count Songs", fontSize = 12.sp, color = Scheme.onSurfaceVariant)
-                        }
-                        TextButton(onClick = { resetFor = name }) { Text("Passwort", fontSize = 12.sp, color = Cyan) }
+                    AdminRow(
+                        avatar = { Text(name.first().uppercase(), fontWeight = FontWeight.Bold, color = Color.White) },
+                        avatarBrush = Brush.linearGradient(listOf(Pink, Violet)),
+                        title = if (admin) "@$name · Admin" else "@$name",
+                        titleColor = if (admin) Cyan else Scheme.onSurface,
+                        subtitle = "$count Songs",
+                    ) {
+                        ActionPill("Ansehen", Cyan) { viewFor = name }
+                        ActionPill("Passwort", Scheme.onSurface) { resetFor = name }
                         if (name != Api.user) {
-                            IconButton(onClick = {
+                            ActionPill("Löschen", Pink) {
                                 scope.launch {
                                     runCatching { withContext(Dispatchers.IO) { Api.adminDeleteUser(name) } }
                                     reload++
                                 }
-                            }) { Icon(Icons.Default.Delete, "Löschen", tint = Pink) }
+                            }
                         }
                     }
                 }
@@ -1166,18 +1173,20 @@ private fun AdminOverlay(onClose: () -> Unit) {
                         modifier = Modifier.padding(top = 14.dp, bottom = 2.dp))
                 }
                 items(invites, key = { "inv:$it" }) { inviteKey ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(inviteKey, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                            color = Scheme.onSurface, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { copyInviteLink(inviteKey) }) {
-                            Text("Link", fontSize = 12.sp, color = Cyan)
-                        }
-                        IconButton(onClick = {
+                    AdminRow(
+                        avatar = { Text("♪", fontWeight = FontWeight.Bold, color = Color.White) },
+                        avatarBrush = Brush.linearGradient(listOf(Color(0xFF0E7490), Violet)),
+                        title = inviteKey,
+                        titleColor = Scheme.onSurface,
+                        subtitle = "Noch nicht eingelöst",
+                    ) {
+                        ActionPill("Link", Cyan) { copyInviteLink(inviteKey) }
+                        ActionPill("Löschen", Pink) {
                             scope.launch {
                                 runCatching { withContext(Dispatchers.IO) { Api.adminDeleteInvite(inviteKey) } }
                                 reload++
                             }
-                        }) { Icon(Icons.Default.Delete, "Löschen", tint = Pink) }
+                        }
                     }
                 }
                 item {
@@ -1192,6 +1201,116 @@ private fun AdminOverlay(onClose: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AdminRow(
+    avatar: @Composable () -> Unit,
+    avatarBrush: Brush,
+    title: String,
+    titleColor: Color,
+    subtitle: String,
+    actions: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.05f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(38.dp).clip(CircleShape).background(avatarBrush), contentAlignment = Alignment.Center) {
+                avatar()
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = titleColor,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
+        ) { actions() }
+    }
+}
+
+@Composable
+private fun ActionPill(label: String, color: Color, onClick: () -> Unit) {
+    Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.06f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp))
+}
+
+@Composable
+private fun UserLibraryOverlay(user: String, onClose: () -> Unit) {
+    var songs by remember { mutableStateOf<List<Song>?>(null) }
+    var recs by remember { mutableStateOf<List<SimilarTrack>?>(null) }
+    var tab by remember { mutableStateOf("VERLAUF") }
+
+    LaunchedEffect(user) {
+        songs = runCatching {
+            withContext(Dispatchers.IO) { parseFeed(Api.adminUserSongs(user)).songs }
+        }.getOrDefault(emptyList())
+    }
+    LaunchedEffect(tab) {
+        if (tab == "RECS" && recs == null) {
+            recs = runCatching {
+                withContext(Dispatchers.IO) { parseSimilar(Api.adminUserRecommendations(user), "recommendations") }
+            }.getOrDefault(emptyList())
+        }
+    }
+
+    OverlayFrame("Sammlung von @$user", onClose) {
+        Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+            listOf("VERLAUF" to "Song Verlauf", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
+                Text(label, fontSize = 13.sp,
+                    fontWeight = if (tab == key) FontWeight.Bold else FontWeight.Medium,
+                    color = if (tab == key) Scheme.onSurface else Scheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { tab = key })
+            }
+        }
+        LazyColumn(Modifier.fillMaxWidth().height(440.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (tab == "RECS") {
+                val list = recs.orEmpty()
+                if (list.isEmpty()) item { Text("Keine Empfehlungen", color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
+                items(list) { t -> LibraryRow(t.artwork, t.track, t.artist, null, favorite = false) }
+            } else {
+                val list = songs
+                val shown = if (tab == "FAV") list.orEmpty().filter { it.favorite } else list.orEmpty()
+                if (list != null && shown.isEmpty()) item { Text("Nichts vorhanden", color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
+                items(shown, key = { it.savedAt }) { s -> LibraryRow(s.artwork, s.name, s.artist, s.source.label, s.favorite) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryRow(artwork: String?, name: String, artist: String, badge: String?, favorite: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        val cover = rememberCover(artwork)
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.07f))) {
+            cover?.let { Image(it.asImageBitmap(), "Cover", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Scheme.onSurface,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (favorite) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Default.Star, "Favorit", tint = Gold, modifier = Modifier.size(14.dp))
+                }
+            }
+            Text(listOfNotNull(artist.takeIf { it.isNotBlank() }, badge).joinToString(" · "),
+                fontSize = 12.sp, color = Scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
