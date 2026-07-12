@@ -1,0 +1,61 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/release.yml"
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version aus Run-Nummer ableiten
+        # 100er-Offset hält den versionCode sicher über den 30 manuell verteilten Ständen
+        run: |
+          echo "VERSION_CODE=$((100 + ${{ github.run_number }}))" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=5.${{ github.run_number }}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.1"
+
+      - name: Keystore entpacken
+        run: echo "$KEYSTORE_B64" | base64 -d > release.keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+
+      - name: Release bauen
+        run: gradle assembleRelease --console=plain
+
+      - name: version.json erzeugen
+        run: |
+          echo "{\"versionCode\": $VERSION_CODE, \"versionName\": \"$VERSION_NAME\"}" > version.json
+          cat version.json
+
+      - name: Auf die Bridge deployen
+        run: |
+          install -m 600 /dev/null deploy_key
+          echo "$DEPLOY_SSH_KEY" > deploy_key
+          scp -i deploy_key -o StrictHostKeyChecking=accept-new \
+            app/build/outputs/apk/release/app-release.apk \
+            scp@ssh.xsyntachs.de:/opt/tiktok-bridge/app.apk.neu
+          scp -i deploy_key -o StrictHostKeyChecking=accept-new \
+            version.json scp@ssh.xsyntachs.de:/opt/tiktok-bridge/version.json.neu
+          # Erst die APK atomar aktivieren, dann die Versionsansage, sonst laden Apps kurz die alte APK
+          ssh -i deploy_key -o StrictHostKeyChecking=accept-new scp@ssh.xsyntachs.de \
+            'mv /opt/tiktok-bridge/app.apk.neu /opt/tiktok-bridge/app.apk && mv /opt/tiktok-bridge/version.json.neu /opt/tiktok-bridge/version.json'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}

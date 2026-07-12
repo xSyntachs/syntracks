@@ -12,8 +12,10 @@ android {
         applicationId = "de.xsyntachs.tiktoksongs"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30
-        versionName = "4.5"
+        // Releases baut die GitHub-Pipeline und setzt die Version aus der Run-Nummer,
+        // die Fallbacks hier gelten nur für lokale Verify-Builds
+        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 30
+        versionName = System.getenv("VERSION_NAME") ?: "4.5-lokal"
     }
 
     signingConfigs {
