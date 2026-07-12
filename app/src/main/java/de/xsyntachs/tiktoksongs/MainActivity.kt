@@ -232,6 +232,18 @@ val Scheme = darkColorScheme(
 
 private val GlassCard = Color.White.copy(alpha = 0.08f)
 
+/** Lädt die aktuelle APK vom Server und öffnet den System-Installer (gleiche Signatur = Update) */
+private fun downloadUpdate(context: Context) {
+    val apk = java.io.File(context.cacheDir, "update.apk")
+    URL(Api.apkUrl()).openStream().use { input -> apk.outputStream().use { input.copyTo(it) } }
+    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apk)
+    context.startActivity(
+        Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
+}
+
 private val coverCache = HashMap<String, Bitmap?>()
 
 @Composable
@@ -485,6 +497,8 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     var recs by remember { mutableStateOf<List<SimilarTrack>?>(null) }
     val savedRecs = remember { mutableStateListOf<String>() }
     var showStats by remember { mutableStateOf(false) }
+    var updateAvailable by remember { mutableStateOf(false) }
+    var updating by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf<String?>(null) }
     val hidden = remember { mutableStateListOf<String>() }
     val snackbar = remember { SnackbarHostState() }
@@ -540,6 +554,12 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 if (sent.isNotEmpty()) tick++
             }
         }
+    }
+    LaunchedEffect(Unit) {
+        val installed = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
+        updateAvailable = runCatching {
+            withContext(Dispatchers.IO) { Api.appVersion() } > installed
+        }.getOrDefault(false)
     }
     LaunchedEffect(similarFor) {
         similarTracks = null
@@ -661,6 +681,32 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                         Spacer(Modifier.height(5.dp))
                         Box(Modifier.height(2.dp).width(28.dp)
                             .background(if (view == key) Pink else Color.Transparent, RoundedCornerShape(1.dp)))
+                    }
+                }
+            }
+            AnimatedVisibility(updateAvailable, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Brush.horizontalGradient(listOf(Pink.copy(alpha = .22f), Violet.copy(alpha = .22f))))
+                        .border(1.dp, Color.White.copy(alpha = .14f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Neue Version verfügbar", fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp, color = Scheme.onBackground)
+                        Text("Lädt die aktuelle App direkt vom Server", fontSize = 12.sp,
+                            color = Scheme.onSurfaceVariant)
+                    }
+                    if (updating) CircularProgressIndicator(Modifier.size(18.dp), color = Cyan, strokeWidth = 2.dp)
+                    else ActionPill("Aktualisieren", Cyan) {
+                        updating = true
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) { runCatching { downloadUpdate(context) }.isSuccess }
+                            updating = false
+                            if (!ok) snackbar.showSnackbar("Update-Download fehlgeschlagen")
+                        }
                     }
                 }
             }

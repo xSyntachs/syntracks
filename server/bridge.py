@@ -617,6 +617,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/app.js":
             return self.reply(200, (BASE / "app.js").read_text(encoding="utf-8"),
                               "application/javascript; charset=utf-8", no_store=True)
+        if path == "/app-version":
+            return self.reply(200, (BASE / "version.json").read_text(encoding="utf-8"),
+                              "application/json", no_store=True)
         if path == "/extension.zip" and (BASE / "extension.zip").exists():
             data = (BASE / "extension.zip").read_bytes()
             return self.send_file(data, "application/zip", "tiktok_songs_extension.zip")

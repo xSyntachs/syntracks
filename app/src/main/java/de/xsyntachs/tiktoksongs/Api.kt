@@ -46,6 +46,9 @@ object Api {
             .putString("token", token).putString("user", user).apply()
     }
 
+    fun appVersion() = JSONObject(request("GET", "/app-version", withToken = false)).getInt("versionCode")
+    fun apkUrl() = "$BASE/app.apk"
+
     fun add(sharedText: String) = request("POST", "/add", sharedText)
     fun songs() = request("GET", "/songs")
     fun delete(savedAt: String) = request("POST", "/delete", savedAt)
