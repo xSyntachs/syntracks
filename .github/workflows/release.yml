@@ -72,10 +72,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk musik_app.apk
-          cp extension.zip tiktok_songs_extension.zip
+          cp app/build/outputs/apk/release/app-release.apk syntracks.apk
+          cp extension.zip syntracks_extension.zip
           gh release delete latest --cleanup-tag --yes || true
-          gh release create latest musik_app.apk tiktok_songs_extension.zip \
-            --title "TikTok Songs $VERSION_NAME" \
+          gh release create latest syntracks.apk syntracks_extension.zip \
+            --title "Syntracks $VERSION_NAME" \
             --notes "versionCode $VERSION_CODE, automatisch gebaut und auf der Bridge deployt." \
             --latest

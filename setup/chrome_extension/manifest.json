@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TikTok Songs",
-  "description": "Speichert die Musik aus dem gerade offenen TikTok-Video in deiner TikTok-Songs-Sammlung.",
-  "version": "2.1",
+  "name": "Syntracks",
+  "description": "Speichert die Musik aus dem gerade offenen TikTok-Video in deiner Syntracks-Sammlung.",
+  "version": "2.2",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -26,5 +26,5 @@
     }
   ],
   "permissions": ["activeTab", "storage", "tabs"],
-  "host_permissions": ["https://tiktok.xsyntachs.de/*"]
+  "host_permissions": ["https://syntracks.xsyntachs.de/*"]
 }

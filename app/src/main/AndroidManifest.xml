@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />
 
     <application
-        android:label="TikTok Songs"
+        android:label="Syntracks"
         android:icon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
@@ -37,7 +37,7 @@
         <activity
             android:name=".ShareActivity"
             android:exported="true"
-            android:label="Song speichern"
+            android:label="Syntracks"
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
@@ -65,7 +65,7 @@
         <service
             android:name=".SaveTileService"
             android:exported="true"
-            android:label="Song speichern"
+            android:label="Syntracks"
             android:icon="@drawable/ic_note"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

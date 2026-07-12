@@ -619,7 +619,7 @@ class Handler(BaseHTTPRequestHandler):
             with USERS_LOCK:
                 save_invites(load_invites() + [key])
             return self.reply(200, json.dumps({
-                "key": key, "link": f"https://tiktok.xsyntachs.de/?invite={key}",
+                "key": key, "link": f"https://syntracks.xsyntachs.de/?invite={key}",
             }), "application/json")
         if path == "/admin/delete-invite":
             if not load_users().get(username, {}).get("admin"):
@@ -714,7 +714,7 @@ class Handler(BaseHTTPRequestHandler):
                               "application/json", no_store=True)
         if path == "/extension.zip" and (BASE / "extension.zip").exists():
             data = (BASE / "extension.zip").read_bytes()
-            return self.send_file(data, "application/zip", "tiktok_songs_extension.zip")
+            return self.send_file(data, "application/zip", "syntracks_extension.zip")
         if path == "/app.apk" and (BASE / "app.apk").exists():
             data = (BASE / "app.apk").read_bytes()
             self.send_response(200)

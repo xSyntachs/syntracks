@@ -1,11 +1,11 @@
-const API = "https://tiktok.xsyntachs.de";
+const API = "https://syntracks.xsyntachs.de";
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type !== "save") return;
   (async () => {
     const { token } = await chrome.storage.local.get("token");
     if (!token) {
-      sendResponse({ ok: false, text: "Nicht angemeldet. Klick oben auf das TikTok-Songs-Symbol und melde dich an." });
+      sendResponse({ ok: false, text: "Nicht angemeldet. Klick oben auf das Syntracks-Symbol und melde dich an." });
       return;
     }
     try {

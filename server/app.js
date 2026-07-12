@@ -492,7 +492,7 @@ async function openAdmin() {
       refresh();
     };
     m.el.querySelectorAll("[data-ci]").forEach(el => el.onclick = async () => {
-      await navigator.clipboard.writeText(`https://tiktok.xsyntachs.de/?invite=${el.dataset.ci}`).catch(() => {});
+      await navigator.clipboard.writeText(`https://syntracks.xsyntachs.de/?invite=${el.dataset.ci}`).catch(() => {});
       toast("Einladungslink kopiert");
     });
     m.el.querySelectorAll("[data-di]").forEach(el => el.onclick = async () => {
@@ -589,7 +589,7 @@ $("howto-btn").onclick = () => modal("Wie benutze ich es?", `<ol class="howto-li
   <li><b>Konto erstellen</b>, hier oder in der App. Du brauchst einen Einladungs-Key von einem Admin,
     mit einem Einladungslink ist er schon ausgefüllt.</li>
   <li><b>Android:</b> APK herunterladen und installieren. In TikTok beim Video auf <b>Teilen</b> und dann
-    <b>TikTok Songs</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
+    <b>Syntracks</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
   <li><b>Browser:</b> Extension laden, in Chrome unter chrome://extensions den Entwicklermodus aktivieren,
     ZIP entpacken und den Ordner über "Entpackte Erweiterung laden" auswählen. Danach hängt unter jedem
     TikTok-Video ein eigener Speichern-Button.</li>

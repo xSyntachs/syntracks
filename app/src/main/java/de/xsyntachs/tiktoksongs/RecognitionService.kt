@@ -27,7 +27,7 @@ class RecognitionService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val progress = build("Song wird erkannt…", "TikTok Songs arbeitet im Hintergrund", ongoing = true)
+        val progress = build("Song wird erkannt…", "Syntracks arbeitet im Hintergrund", ongoing = true)
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(1, progress, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
         } else {

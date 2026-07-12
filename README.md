@@ -1,4 +1,4 @@
-# TikTok Songs
+# Syntracks
 
 Merkt sich die Musik aus TikTok-Videos. Video teilen, der Server erkennt den Song (Shazam-Fingerprint mit Tempo-Korrektur für Slowed-Versionen, iTunes-Abgleich, Caption-Parsing) und die Sammlung ist überall verfügbar, als Android-App, im Browser und per Chrome-Erweiterung. Multi-User mit eigenen Konten.
 

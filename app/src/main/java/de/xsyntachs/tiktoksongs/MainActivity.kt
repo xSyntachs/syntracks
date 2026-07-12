@@ -1157,7 +1157,7 @@ private fun AdminOverlay(onClose: () -> Unit) {
         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
             as android.content.ClipboardManager
         clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
-            "Einladung", "https://tiktok.xsyntachs.de/?invite=$key"))
+            "Einladung", "https://syntracks.xsyntachs.de/?invite=$key"))
         android.widget.Toast.makeText(context, "Einladungslink kopiert", android.widget.Toast.LENGTH_SHORT).show()
     }
 

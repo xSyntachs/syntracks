@@ -6,7 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object Api {
-    private const val BASE = "https://tiktok.xsyntachs.de"
+    private const val BASE = "https://syntracks.xsyntachs.de"
     private var token: String? = null
     var user: String? = null
         private set

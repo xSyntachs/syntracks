@@ -1,4 +1,4 @@
-const API = "https://tiktok.xsyntachs.de";
+const API = "https://syntracks.xsyntachs.de";
 
 const el = (id) => document.getElementById(id);
 

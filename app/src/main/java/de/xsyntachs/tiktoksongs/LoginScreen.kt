@@ -54,7 +54,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("♪", fontSize = 56.sp, color = Pink)
-            Text("TikTok Songs", fontSize = 26.sp, fontWeight = FontWeight.Black, color = Scheme.onBackground)
+            Text("Syntracks", fontSize = 26.sp, fontWeight = FontWeight.Black, color = Scheme.onBackground)
             Text(if (register) "Konto erstellen" else "Anmelden",
                 fontSize = 14.sp, color = Scheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 24.dp))

@@ -12,7 +12,7 @@ function showToast(text, withLink) {
   toast.textContent = text;
   if (withLink) {
     const link = document.createElement("a");
-    link.href = "https://tiktok.xsyntachs.de";
+    link.href = "https://syntracks.xsyntachs.de";
     link.target = "_blank";
     link.textContent = "Sammlung öffnen";
     link.style.cssText = "color:#25F4EE;margin-left:10px;text-decoration:none";
@@ -51,7 +51,7 @@ function injectButtons() {
     holder.className = "tts-save";
     holder.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px";
     const btn = document.createElement("button");
-    btn.title = "Song speichern (TikTok Songs)";
+    btn.title = "Song speichern (Syntracks)";
     btn.style.cssText = `width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;
       display:flex;align-items:center;justify-content:center;
       background:linear-gradient(135deg,#FE2C55,#7828C8)`;
@@ -70,7 +70,7 @@ function injectButtons() {
     if (group.querySelector(".tts-save")) return;
     const btn = document.createElement("button");
     btn.className = "tts-save";
-    btn.title = "Song speichern (TikTok Songs)";
+    btn.title = "Song speichern (Syntracks)";
     btn.style.cssText = `width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;
       display:flex;align-items:center;justify-content:center;margin-right:8px;flex:none;
       background:linear-gradient(135deg,#FE2C55,#7828C8)`;
