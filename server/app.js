@@ -27,7 +27,7 @@ const SOURCES = {
 };
 const FILTER_LABEL = { ALLE: "Alle", TIKTOK: "Offiziell", SHAZAM: "Shazam",
                        CAPTION: "Aus Caption", ORIGINAL: "Original" };
-const VIEWS = { SONGS: "Songs", FAV: "Favoriten", RECS: "Empfehlungen" };
+const VIEWS = { SONGS: "Song Verlauf", FAV: "Favoriten", RECS: "Empfehlungen" };
 const STAGE_PROGRESS = { "Wartet": 10, "Video wird geladen": 40, "Song wird erkannt": 75, "Wird gespeichert": 95 };
 
 const sourceOf = (s) => s.similar ? "SIMILAR" : s.recognized ? "SHAZAM" : s.from_caption ? "CAPTION"
@@ -247,7 +247,7 @@ function render() {
     try {
       await api("/save-similar", { method: "POST", body: JSON.stringify(t) });
       el.textContent = "✓"; el.classList.add("done");
-      toast("Zu Favoriten hinzugefügt");
+      toast("In deine Favoriten gespeichert");
       load();
     } catch (e) { toast("Speichern fehlgeschlagen"); }
   });
@@ -379,7 +379,7 @@ async function openSimilar(seed) {
     try {
       await api("/save-similar", { method: "POST", body: JSON.stringify(t) });
       el.textContent = "✓"; el.classList.add("done");
-      toast("Zu Favoriten hinzugefügt");
+      toast("In deine Favoriten gespeichert");
       load();
     } catch (e) { toast("Speichern fehlgeschlagen"); }
   });

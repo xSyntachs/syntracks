@@ -326,12 +326,13 @@ def worker():
                 clip = download_clip(song["url"])
             except Exception:
                 clip = None
-            if song["original"] and clip:
+            if clip:
+                # Shazam läuft immer, TikToks eigene Song-Metadaten sind oft falsch oder nur der Sound-Titel
                 PENDING[username][url]["stage"] = "Song wird erkannt"
                 hit = recognize(clip)
                 if hit:
                     song.update(hit)
-                else:
+                elif song["original"]:
                     caption = caption_song(song["title"])
                     if caption:
                         song.update({"track": caption, "from_caption": True})
@@ -428,7 +429,7 @@ class Handler(BaseHTTPRequestHandler):
                 "artist": track.get("artist"), "title": None, "url": track.get("url") or "",
                 "preview": track.get("preview"), "artwork": track.get("artwork"),
             })
-            return self.reply(200, "Zu Favoriten hinzugefügt")
+            return self.reply(200, "In deine Favoriten gespeichert")
         if path == "/favorite":
             try:
                 data = json.loads(self.body())

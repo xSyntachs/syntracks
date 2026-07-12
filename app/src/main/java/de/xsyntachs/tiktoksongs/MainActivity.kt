@@ -651,7 +651,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                listOf("SONGS" to "Songs", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
+                listOf("SONGS" to "Song Verlauf", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
                     Column(
                         Modifier.clickable { view = key },
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -734,7 +734,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                                 tick++
                             }
                             android.widget.Toast.makeText(context,
-                                if (ok) "In deine Liste übernommen" else "Speichern fehlgeschlagen",
+                                if (ok) "In deine Favoriten gespeichert" else "Speichern fehlgeschlagen",
                                 android.widget.Toast.LENGTH_SHORT).show()
                         }
                     },
@@ -940,7 +940,7 @@ private fun SimilarOverlay(
                                 }
                                 if (result.isSuccess) {
                                     saved.add(track.track + track.artist)
-                                    android.widget.Toast.makeText(context, "In deine Liste übernommen", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, "In deine Favoriten gespeichert", android.widget.Toast.LENGTH_SHORT).show()
                                     onSaved()
                                 } else {
                                     android.widget.Toast.makeText(context, "Speichern fehlgeschlagen", android.widget.Toast.LENGTH_SHORT).show()
