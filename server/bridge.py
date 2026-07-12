@@ -235,6 +235,53 @@ def similar_tracks(artist, name):
     return tracks
 
 
+REC_CACHE = {}
+
+
+def recommendations(username, limit=10):
+    all_songs = load_songs(username)
+    cache_key = len(all_songs)
+    cached = REC_CACHE.get(username)
+    if cached and cached[0] == cache_key:
+        return cached[1]
+    own = [s for s in all_songs if not s.get("similar")][-20:]
+    have = {_norm(f"{s['artist']} {song_name(s)}") for s in all_songs}
+    seen_artists, pool = set(), []
+    for seed in reversed(own):
+        name = song_name(seed)
+        if name == "Original-Sound":
+            continue
+        plain = re.sub(r"\(.*?\)", "", name).strip() or name
+        try:
+            term = quote(f"{seed['artist']} {plain}")
+            hits = deezer(f"/search?q={term}").get("data") or []
+            if not hits:
+                continue
+            for rel in deezer(f"/artist/{hits[0]['artist']['id']}/related").get("data", [])[:3]:
+                if rel["id"] in seen_artists:
+                    continue
+                seen_artists.add(rel["id"])
+                for t in deezer(f"/artist/{rel['id']}/top?limit=2").get("data", []):
+                    key = _norm(f"{t['artist']['name']} {t['title']}")
+                    if key in have:
+                        continue
+                    have.add(key)
+                    pool.append({
+                        "track": t["title"],
+                        "artist": t["artist"]["name"],
+                        "preview": t.get("preview"),
+                        "artwork": (t.get("album") or {}).get("cover_medium"),
+                        "url": t.get("link"),
+                    })
+        except Exception:
+            continue
+        if len(pool) >= limit * 2:
+            break
+    result = pool[:limit]
+    REC_CACHE[username] = (cache_key, result)
+    return result
+
+
 def load_songs(username):
     path = songs_path(username)
     if not path.exists():
@@ -295,13 +342,36 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def send_file(self, data, content_type, filename=None):
-        self.send_response(200)
+        # Ohne Range-Support (206) kann kein Browser und kein MediaPlayer im Audio spulen
+        total = len(data)
+        start, end, code = 0, total - 1, 200
+        rng = self.headers.get("Range", "")
+        if rng.startswith("bytes="):
+            first, _, last = rng[6:].split(",")[0].partition("-")
+            try:
+                if first:
+                    start = int(first)
+                    if last:
+                        end = min(int(last), total - 1)
+                else:
+                    start = max(0, total - int(last))
+                if 0 <= start <= end:
+                    code = 206
+                else:
+                    start, end = 0, total - 1
+            except ValueError:
+                start, end = 0, total - 1
+        chunk = data[start:end + 1]
+        self.send_response(code)
         self.send_header("Content-Type", content_type)
+        self.send_header("Accept-Ranges", "bytes")
+        if code == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
         if filename:
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
-        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Length", str(len(chunk)))
         self.end_headers()
-        self.wfile.write(data)
+        self.wfile.write(chunk)
 
     def body(self):
         length = min(int(self.headers.get("Content-Length") or 0), 65536)
@@ -481,6 +551,13 @@ class Handler(BaseHTTPRequestHandler):
             overview = [{"name": name, "admin": bool(info.get("admin")),
                          "songs": len(load_songs(name))} for name, info in sorted(load_users().items())]
             return self.reply(200, json.dumps({"users": overview}, ensure_ascii=False), "application/json")
+        if path == "/recommendations":
+            try:
+                tracks = recommendations(username)
+            except Exception as e:
+                return self.reply(502, f"Empfehlungen nicht verfügbar: {e}")
+            return self.reply(200, json.dumps({"recommendations": tracks}, ensure_ascii=False),
+                              "application/json")
         if path == "/similar":
             match = find_song(username, self.query_id())
             if not match:

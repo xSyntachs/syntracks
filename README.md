@@ -30,3 +30,7 @@ Server-Betrieb: `server/bridge.py` braucht Python 3.11+, ein venv mit `shazamio`
 ## Entwicklung
 
 Build-Kommandos, Release-Pflichten und Stolperfallen stehen in [CLAUDE.md](CLAUDE.md). Der Release-Keystore ist bewusst nicht im Repo.
+
+## Lizenz
+
+Der Code ist öffentlich einsehbar, aber geschützt. Nutzung der fertigen App ist erlaubt, Kopieren, Weiterverwenden oder Selbst-Hosten des Codes nicht. Details in [LICENSE](LICENSE).

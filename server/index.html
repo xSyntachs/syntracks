@@ -43,6 +43,12 @@
   .btn-ghost:hover { background: var(--glass-hover); border-color: var(--border-strong); }
   .btn-ghost.dead { color: var(--muted); font-weight: 400; cursor: default; }
   .btn-ghost.dead:hover { background: var(--glass); border-color: var(--border); }
+  .howto { margin-top: var(--s3); border: 1px solid var(--border); border-radius: var(--r-input);
+           background: var(--glass); padding: var(--s2) var(--s3); font-size: 13px; }
+  .howto summary { cursor: pointer; font-weight: 600; color: var(--cyan); outline: none; }
+  .howto ol { margin: var(--s2) 0 var(--s1) 18px; color: var(--muted); display: flex;
+              flex-direction: column; gap: var(--s1); text-align: left; }
+  .howto b { color: var(--text); }
   .icon-btn { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
     background: var(--glass); border: 1px solid var(--border); border-radius: 50%; color: var(--muted);
     font-size: 17px; cursor: pointer; transition: background .15s, color .15s; flex-shrink: 0; }
@@ -213,6 +219,15 @@
       <a class="btn-ghost" href="/extension.zip" download="tiktok_songs_extension.zip">&#8681; Download Browser Extension</a>
       <span class="btn-ghost dead">iPhone nicht verf&uuml;gbar, au&szlig;er ihr wollt 100&thinsp;&euro; zahlen</span>
     </div>
+    <details class="howto">
+      <summary>Wie benutze ich es?</summary>
+      <ol>
+        <li><b>Konto erstellen</b>, hier oder in der App, Name und Passwort reichen.</li>
+        <li><b>Android:</b> APK herunterladen und installieren. In TikTok beim Video auf <b>Teilen</b> und dann <b>TikTok Songs</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
+        <li><b>Browser:</b> Extension laden, in Chrome unter chrome://extensions den Entwicklermodus aktivieren, ZIP entpacken und den Ordner &uuml;ber "Entpackte Erweiterung laden" ausw&auml;hlen. Dann speichert ein Klick das offene TikTok-Video.</li>
+        <li>Deine Sammlung liegt hier und in der App, mit Anh&ouml;ren, Downloads, Empfehlungen und Statistik.</li>
+      </ol>
+    </details>
   </div>
 </div>
 
@@ -222,7 +237,6 @@
       <h1 class="display">Deine Sounds</h1>
       <div class="sub" id="whoami"></div>
     </div>
-    <button class="icon-btn" id="reload" title="Aktualisieren">&#8635;</button>
     <button class="icon-btn" id="profile" title="Konto">&#128100;</button>
   </div>
   <div class="chips" id="stats"></div>
@@ -331,11 +345,14 @@ function stopPlay() {
   render();
 }
 audio.addEventListener("ended", stopPlay);
+let seeking = false;
 audio.addEventListener("timeupdate", () => {
   $("pb-cur").textContent = fmtTime(audio.currentTime);
   $("pb-dur").textContent = fmtTime(audio.duration);
-  if (audio.duration) $("pb-seek").value = Math.round(audio.currentTime / audio.duration * 1000);
+  if (audio.duration && !seeking) $("pb-seek").value = Math.round(audio.currentTime / audio.duration * 1000);
 });
+$("pb-seek").addEventListener("pointerdown", () => seeking = true);
+$("pb-seek").addEventListener("pointerup", () => seeking = false);
 function setToggle(state) {
   $("pb-toggle").innerHTML = state === "loading" ? '<span class="spinner"></span>'
     : state === "playing" ? "&#10074;&#10074;" : "&#9654;";
@@ -394,6 +411,25 @@ function renderStats() {
     el.onclick = () => { filter = el.dataset.f; renderStats(); render(); });
 }
 
+let recs = null, recsLoading = false;
+async function loadRecs() {
+  if (recsLoading) return;
+  recsLoading = true;
+  try { recs = (await (await api("/recommendations")).json()).recommendations; }
+  catch (e) { recs = []; }
+  recsLoading = false;
+  render();
+}
+
+function recRow(t, i) {
+  return `<div class="mrow">
+    <div class="cover" ${t.artwork ? `style="background-image:url('${esc(t.artwork)}')"` : ""} data-rp="${i}">
+      <div class="ply">&#9654;</div></div>
+    <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist)}</span></div>
+    <button class="add" data-ra="${i}" title="Merken">+</button>
+  </div>`;
+}
+
 function render() {
   const q = $("search").value.toLowerCase();
   const shown = songs.filter(s => {
@@ -411,7 +447,18 @@ function render() {
       <div class="pendbar"><div style="width:${STAGE_PROGRESS[stage] || 10}%"></div></div>
     </div>`;
   }
-  if (!shown.length && !lastPending.length) {
+  if (filter === "SIMILAR") {
+    if (recs === null && !recsLoading) loadRecs();
+    html += `<div class="pendcard"><b style="font-size:14px">Für dich</b>
+      <div class="sub" style="margin-bottom:10px">Auf Basis deiner letzten Songs</div>`;
+    html += recs === null
+      ? `<div class="pendrow"><div class="spinner"></div><div>Empfehlungen werden gesucht…</div></div>`
+      : recs.length
+        ? recs.map((t, i) => recRow(t, i)).join("")
+        : `<div class="sub">Gerade keine neuen Empfehlungen.</div>`;
+    html += `</div>`;
+  }
+  if (!shown.length && !lastPending.length && filter !== "SIMILAR") {
     html += `<div class="sub" style="padding:56px 0;text-align:center;font-size:15px">&#9834;<br><br>Nichts gefunden.</div>`;
   }
   html += shown.map(s => {
@@ -437,6 +484,20 @@ function render() {
   document.querySelectorAll("[data-menu]").forEach(el => el.onclick = (ev) => {
     ev.stopPropagation();
     openSongMenu(songs[el.dataset.menu], el);
+  });
+  document.querySelectorAll("[data-rp]").forEach(el => el.onclick = () => {
+    const t = recs[el.dataset.rp];
+    if (!t.preview) { toast("Keine Vorschau verfügbar"); return; }
+    playSource("rec:" + el.dataset.rp, t.preview, t.track, t.artist, t.artwork);
+  });
+  document.querySelectorAll("[data-ra]").forEach(el => el.onclick = async () => {
+    const t = recs[el.dataset.ra];
+    try {
+      await api("/save-similar", { method: "POST", body: JSON.stringify(t) });
+      el.textContent = "✓"; el.classList.add("done");
+      toast("In deine Liste übernommen");
+      load();
+    } catch (e) { toast("Speichern fehlgeschlagen"); }
   });
 }
 
@@ -685,8 +746,8 @@ $("toggle-register").onclick = () => {
   $("login-btn").textContent = registerMode ? "Konto erstellen" : "Anmelden";
   $("toggle-register").textContent = registerMode ? "Schon ein Konto? Anmelden" : "Neu hier? Konto erstellen";
 };
-$("reload").onclick = load;
 $("search").addEventListener("input", render);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
 
 if (token) { show(true); load(); } else { show(false); }
 </script>

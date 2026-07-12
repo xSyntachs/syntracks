@@ -49,6 +49,7 @@ object Api {
     fun songs() = request("GET", "/songs")
     fun delete(savedAt: String) = request("POST", "/delete", savedAt)
     fun similar(key: String) = request("GET", "/similar?id=$key")
+    fun recommendations() = request("GET", "/recommendations")
     fun saveSimilar(trackJson: String) = request("POST", "/save-similar", trackJson)
     fun previewUrl(key: String) = "$BASE/preview?id=$key&token=$token"
     fun fullUrl(key: String) = "$BASE/full?id=$key&token=$token"

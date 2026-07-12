@@ -33,6 +33,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -63,7 +64,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -154,8 +154,8 @@ data class SimilarTrack(
     val url: String?,
 )
 
-private fun parseSimilar(raw: String): List<SimilarTrack> {
-    val tracks = JSONObject(raw).getJSONArray("similar")
+private fun parseSimilar(raw: String, key: String = "similar"): List<SimilarTrack> {
+    val tracks = JSONObject(raw).getJSONArray(key)
     return (0 until tracks.length()).map { i ->
         val t = tracks.getJSONObject(i)
         SimilarTrack(
@@ -470,6 +470,8 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     var playProgress by remember { mutableFloatStateOf(0f) }
     var similarFor by remember { mutableStateOf<Song?>(null) }
     var similarTracks by remember { mutableStateOf<List<SimilarTrack>?>(null) }
+    var recs by remember { mutableStateOf<List<SimilarTrack>?>(null) }
+    val savedRecs = remember { mutableStateListOf<String>() }
     var showStats by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf<String?>(null) }
     val hidden = remember { mutableStateListOf<String>() }
@@ -535,6 +537,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             }.getOrDefault(emptyList())
         }
     }
+    LaunchedEffect(sourceFilter) {
+        if (sourceFilter == Song.Source.SIMILAR && recs == null) {
+            recs = runCatching {
+                withContext(Dispatchers.IO) { parseSimilar(Api.recommendations(), "recommendations") }
+            }.getOrDefault(emptyList())
+        }
+    }
 
     val songs = feed?.songs.orEmpty().filter { it.savedAt !in hidden }
     val shown = songs.filter { song ->
@@ -560,154 +569,139 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     AuroraBackground {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Deine Sounds", fontSize = 30.sp, fontWeight = FontWeight.Black,
-                            color = Scheme.onBackground)
-                        Api.user?.let { Text("@$it", fontSize = 12.sp, color = Scheme.onSurfaceVariant) }
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp)) {
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Deine Sounds", fontSize = 30.sp, fontWeight = FontWeight.Black,
+                        color = Scheme.onBackground)
+                    Api.user?.let { Text("@$it", fontSize = 12.sp, color = Scheme.onSurfaceVariant) }
+                }
+                IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
+                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search, "Suche", tint = Scheme.onSurfaceVariant)
+                }
+                Box {
+                    var accountMenu by remember { mutableStateOf(false) }
+                    IconButton(onClick = { accountMenu = true }) {
+                        Icon(Icons.Default.AccountCircle, "Konto", tint = Scheme.onSurfaceVariant)
                     }
-                    IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                        Icon(if (searching) Icons.Default.Close else Icons.Default.Search, "Suche", tint = Scheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { tick++ }) {
-                        Icon(Icons.Default.Refresh, "Aktualisieren", tint = Scheme.onSurfaceVariant)
-                    }
-                    Box {
-                        var accountMenu by remember { mutableStateOf(false) }
-                        IconButton(onClick = { accountMenu = true }) {
-                            Icon(Icons.Default.AccountCircle, "Konto", tint = Scheme.onSurfaceVariant)
-                        }
-                        DropdownMenu(expanded = accountMenu, onDismissRequest = { accountMenu = false }) {
+                    DropdownMenu(expanded = accountMenu, onDismissRequest = { accountMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Name ändern") },
+                            onClick = { accountMenu = false; dialog = "rename" },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Passwort ändern") },
+                            onClick = { accountMenu = false; dialog = "password" },
+                        )
+                        if (feed?.admin == true) {
                             DropdownMenuItem(
-                                text = { Text("Name ändern") },
-                                onClick = { accountMenu = false; dialog = "rename" },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Passwort ändern") },
-                                onClick = { accountMenu = false; dialog = "password" },
-                            )
-                            if (feed?.admin == true) {
-                                DropdownMenuItem(
-                                    text = { Text("Konten verwalten") },
-                                    onClick = { accountMenu = false; dialog = "admin" },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text("Abmelden") },
-                                onClick = { accountMenu = false; onLogout() },
+                                text = { Text("Konten verwalten") },
+                                onClick = { accountMenu = false; dialog = "admin" },
                             )
                         }
+                        DropdownMenuItem(
+                            text = { Text("Abmelden") },
+                            onClick = { accountMenu = false; onLogout() },
+                        )
                     }
                 }
             }
-            item {
-                feed?.let {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatChip("${songs.size} Songs")
-                        StatChip("${thisWeek(songs)} diese Woche")
-                        topArtist(songs)?.let { top -> StatChip("Top $top") }
-                        Surface(
-                            color = Cyan.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(99.dp),
-                            border = BorderStroke(1.dp, Cyan.copy(alpha = 0.4f)),
-                            modifier = Modifier.clickable { showStats = true },
-                        ) {
-                            Text("Dein Geschmack", Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                fontSize = 12.sp, color = Cyan)
-                        }
+            Spacer(Modifier.height(10.dp))
+            feed?.let {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatChip("${songs.size} Songs")
+                    StatChip("${thisWeek(songs)} diese Woche")
+                    topArtist(songs)?.let { top -> StatChip("Top $top") }
+                    Surface(
+                        color = Cyan.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(99.dp),
+                        border = BorderStroke(1.dp, Cyan.copy(alpha = 0.4f)),
+                        modifier = Modifier.clickable { showStats = true },
+                    ) {
+                        Text("Dein Geschmack", Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            fontSize = 12.sp, color = Cyan)
                     }
-                } ?: Text("lädt…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
-            }
-            item {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SourceChip("Alle", sourceFilter == null) { sourceFilter = null }
-                    Song.Source.entries.forEach { source ->
-                        SourceChip(source.filter, sourceFilter == source) {
-                            sourceFilter = if (sourceFilter == source) null else source
-                        }
+                }
+            } ?: Text("lädt…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SourceChip("Alle", sourceFilter == null) { sourceFilter = null }
+                Song.Source.entries.forEach { source ->
+                    SourceChip(source.filter, sourceFilter == source) {
+                        sourceFilter = if (sourceFilter == source) null else source
                     }
                 }
             }
-            item {
-                AnimatedVisibility(searching, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                        placeholder = { Text("Song oder Artist suchen…") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Cyan,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                        ),
-                    )
-                }
+            AnimatedVisibility(searching, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    placeholder = { Text("Song oder Artist suchen…") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Cyan,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                    ),
+                )
             }
-            clipboardSuggestion?.let {
-                item {
-                    GlassBox {
-                        Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Text("TikTok-Link in der Zwischenablage", Modifier.weight(1f), fontSize = 14.sp)
-                            Surface(
-                                color = Cyan.copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(99.dp),
-                                modifier = Modifier.clickable {
-                                    onClipboardHandled(true)
-                                    tick++
-                                },
-                            ) {
-                                Text("Speichern", Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    fontSize = 13.sp, color = Cyan)
+            Spacer(Modifier.height(12.dp))
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(alpha = 0.28f)),
+            ) {
+                SongList(
+                    clipboardSuggestion = clipboardSuggestion,
+                    onClipboardHandled = { save -> onClipboardHandled(save); if (save) tick++ },
+                    error = error,
+                    feed = feed,
+                    shown = shown,
+                    recs = recs,
+                    savedRecs = savedRecs,
+                    showRecs = sourceFilter == Song.Source.SIMILAR,
+                    clipPlayer = clipPlayer,
+                    playProgress = playProgress,
+                    filtered = query.isNotBlank() || sourceFilter != null,
+                    onSeek = { playProgress = it; clipPlayer.seekTo(it) },
+                    onVolume = {
+                        clipPlayer.changeVolume(it)
+                        context.getSharedPreferences("queue", Context.MODE_PRIVATE)
+                            .edit().putFloat("volume", it).apply()
+                    },
+                    onPlayFull = { song -> clipPlayer.play(song.clip, Api.fullUrl(song.clip)) },
+                    onSimilar = { similarFor = it },
+                    onDelete = { deleteWithUndo(it) },
+                    onSaveRec = { track ->
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    Api.saveSimilar(JSONObject().apply {
+                                        put("track", track.track)
+                                        put("artist", track.artist)
+                                        put("preview", track.preview)
+                                        put("artwork", track.artwork)
+                                        put("url", track.url)
+                                    }.toString())
+                                }.isSuccess
                             }
-                            IconButton(onClick = { onClipboardHandled(false) }) {
-                                Icon(Icons.Default.Close, "Verwerfen", tint = Scheme.onSurfaceVariant)
+                            if (ok) {
+                                savedRecs.add(track.track + track.artist)
+                                tick++
                             }
+                            android.widget.Toast.makeText(context,
+                                if (ok) "In deine Liste übernommen" else "Speichern fehlgeschlagen",
+                                android.widget.Toast.LENGTH_SHORT).show()
                         }
-                    }
-                }
+                    },
+                )
             }
-            error?.let {
-                item {
-                    GlassBox { Text(it, Modifier.padding(16.dp), color = Pink) }
-                }
-            }
-            if ((feed?.pending ?: 0) > 0) {
-                item { PendingCard(feed!!.pending, feed!!.pendingStage) }
-            }
-            if (feed != null && shown.isEmpty() && feed!!.pending == 0) {
-                item { EmptyState(query.isNotBlank() || sourceFilter != null) }
-            }
-            items(shown, key = { it.savedAt }) { song ->
-                Box(Modifier.animateItem()) {
-                    SongCard(
-                        song = song,
-                        buffering = clipPlayer.state?.takeIf { it.first == song.clip }?.second,
-                        progress = playProgress,
-                        volume = clipPlayer.volume,
-                        onVolume = {
-                            clipPlayer.changeVolume(it)
-                            context.getSharedPreferences("queue", Context.MODE_PRIVATE)
-                                .edit().putFloat("volume", it).apply()
-                        },
-                        onSeek = {
-                            playProgress = it
-                            clipPlayer.seekTo(it)
-                        },
-                        onPlay = { clipPlayer.toggle(song.clip) },
-                        onPlayFull = { clipPlayer.play(song.clip, Api.fullUrl(song.clip)) },
-                        onSimilar = { similarFor = song },
-                        onDelete = { deleteWithUndo(song) },
-                    )
-                }
-            }
+            Spacer(Modifier.height(12.dp))
         }
         similarFor?.let { seed ->
             SimilarOverlay(
@@ -727,6 +721,111 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             "admin" -> AdminOverlay(onClose = { dialog = null })
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(16.dp))
+    }
+}
+
+@Composable
+private fun SongList(
+    clipboardSuggestion: String?,
+    onClipboardHandled: (Boolean) -> Unit,
+    error: String?,
+    feed: Feed?,
+    shown: List<Song>,
+    recs: List<SimilarTrack>?,
+    savedRecs: List<String>,
+    showRecs: Boolean,
+    clipPlayer: ClipPlayer,
+    playProgress: Float,
+    filtered: Boolean,
+    onSeek: (Float) -> Unit,
+    onVolume: (Float) -> Unit,
+    onPlayFull: (Song) -> Unit,
+    onSimilar: (Song) -> Unit,
+    onDelete: (Song) -> Unit,
+    onSaveRec: (SimilarTrack) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        clipboardSuggestion?.let {
+            item {
+                GlassBox {
+                    Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text("TikTok-Link in der Zwischenablage", Modifier.weight(1f), fontSize = 14.sp)
+                        Surface(
+                            color = Cyan.copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(99.dp),
+                            modifier = Modifier.clickable { onClipboardHandled(true) },
+                        ) {
+                            Text("Speichern", Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                fontSize = 13.sp, color = Cyan)
+                        }
+                        IconButton(onClick = { onClipboardHandled(false) }) {
+                            Icon(Icons.Default.Close, "Verwerfen", tint = Scheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+        error?.let {
+            item {
+                GlassBox { Text(it, Modifier.padding(16.dp), color = Pink) }
+            }
+        }
+        if ((feed?.pending ?: 0) > 0) {
+            item { PendingCard(feed!!.pending, feed!!.pendingStage) }
+        }
+        if (showRecs) {
+            item {
+                GlassBox {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Für dich", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text("Auf Basis deiner letzten Songs", fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+                        Spacer(Modifier.height(6.dp))
+                        when {
+                            recs == null -> Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(Modifier.size(20.dp), color = Cyan, strokeWidth = 2.dp)
+                                Spacer(Modifier.width(10.dp))
+                                Text("Empfehlungen werden gesucht…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+                            }
+                            recs.isEmpty() -> Text("Gerade keine neuen Empfehlungen.",
+                                color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+                            else -> recs.forEach { track ->
+                                SimilarRow(
+                                    track = track,
+                                    playing = clipPlayer.state?.takeIf { it.first == track.preview }?.second,
+                                    alreadySaved = track.track + track.artist in savedRecs,
+                                    onPlay = { track.preview?.let { clipPlayer.toggle(it, it) } },
+                                    onSave = { onSaveRec(track) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (feed != null && shown.isEmpty() && feed.pending == 0 && !showRecs) {
+            item { EmptyState(filtered) }
+        }
+        items(shown, key = { it.savedAt }) { song ->
+            Box(Modifier.animateItem()) {
+                SongCard(
+                    song = song,
+                    buffering = clipPlayer.state?.takeIf { it.first == song.clip }?.second,
+                    progress = playProgress,
+                    volume = clipPlayer.volume,
+                    onVolume = onVolume,
+                    onSeek = onSeek,
+                    onPlay = { clipPlayer.toggle(song.clip) },
+                    onPlayFull = { onPlayFull(song) },
+                    onSimilar = { onSimilar(song) },
+                    onDelete = { onDelete(song) },
+                )
+            }
+        }
     }
 }
 
