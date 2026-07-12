@@ -55,11 +55,21 @@ def hash_pw(password, salt):
     return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
 
 
+# Jede Anmeldung ist eine eigene Sitzung, maximal 3 pro Konto (App, Web, Extension).
+# Eine vierte Anmeldung wirft die älteste Sitzung raus, Account-Sharing kickt also
+# immer jemanden und fällt sofort auf. Alte users.json-Einträge haben noch "token".
+MAX_SESSIONS = 3
+
+
+def user_tokens(info):
+    return info.get("tokens") or ([info["token"]] if info.get("token") else [])
+
+
 def user_for_token(token):
     if not token:
         return None
     for name, info in load_users().items():
-        if compare_digest(token, info["token"]):
+        if any(compare_digest(token, t) for t in user_tokens(info)):
             return name
     return None
 
@@ -582,8 +592,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(401, "Altes Passwort falsch")
                 info["salt"] = secrets.token_hex(16)
                 info["hash"] = hash_pw(new, info["salt"])
+                # Passwortwechsel wirft alle anderen Sitzungen raus, nur die eigene bleibt
+                own = self.headers.get("X-Token") or (parse_qs(urlsplit(self.path).query).get("token") or [""])[0]
+                info["tokens"] = [own]
+                info.pop("token", None)
                 save_users(users)
-            return self.reply(200, "Passwort geändert")
+            return self.reply(200, "Passwort geändert, andere Geräte wurden abgemeldet")
         if path == "/admin/delete-user":
             if not load_users().get(username, {}).get("admin"):
                 return self.reply(403, "Kein Admin")
@@ -630,8 +644,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(404, "Unbekannter Nutzer")
                 users[target]["salt"] = secrets.token_hex(16)
                 users[target]["hash"] = hash_pw(new, users[target]["salt"])
+                users[target]["tokens"] = []
+                users[target].pop("token", None)
                 save_users(users)
-            return self.reply(200, "Passwort zurückgesetzt")
+            return self.reply(200, "Passwort zurückgesetzt, alle Geräte abgemeldet")
         return self.reply(404, "Nicht gefunden")
 
     def handle_auth(self, path):
@@ -660,7 +676,7 @@ class Handler(BaseHTTPRequestHandler):
                     save_invites(invites)
                 salt = secrets.token_hex(16)
                 token = secrets.token_hex(24)
-                users[name] = {"salt": salt, "hash": hash_pw(password, salt), "token": token}
+                users[name] = {"salt": salt, "hash": hash_pw(password, salt), "tokens": [token]}
                 # Erster registrierter Nutzer erbt die Alt-Songs aus der Zeit vor den Konten
                 legacy = BASE / "songs.jsonl"
                 if len(users) == 1 and legacy.exists():
@@ -670,7 +686,11 @@ class Handler(BaseHTTPRequestHandler):
             info = users.get(name)
             if not info or not compare_digest(hash_pw(password, info["salt"]), info["hash"]):
                 return self.reply(401, "Falscher Benutzername oder Passwort")
-            return self.reply(200, json.dumps({"token": info["token"], "user": name}), "application/json")
+            token = secrets.token_hex(24)
+            info["tokens"] = (user_tokens(info) + [token])[-MAX_SESSIONS:]
+            info.pop("token", None)
+            save_users(users)
+            return self.reply(200, json.dumps({"token": token, "user": name}), "application/json")
 
     def do_GET(self):
         path = urlsplit(self.path).path

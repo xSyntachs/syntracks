@@ -521,6 +521,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             feed = parseFeed(raw)
             error = null
         } catch (e: Exception) {
+            // Sitzung serverseitig beendet (Anmeldung auf einem anderen Gerät) -> zurück zum Login
+            if (e.message == "Nicht angemeldet") {
+                android.widget.Toast.makeText(context,
+                    "Sitzung abgelaufen, bitte neu anmelden", android.widget.Toast.LENGTH_LONG).show()
+                onLogout()
+                return@LaunchedEffect
+            }
             error = e.message ?: "Netzwerkfehler"
         }
     }

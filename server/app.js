@@ -42,6 +42,11 @@ function toast(text) {
 async function api(path, opts = {}) {
   opts.headers = Object.assign({ "X-Token": token || "" }, opts.headers);
   const r = await fetch(path, opts);
+  if (r.status === 401 && token) {
+    // Sitzung wurde serverseitig beendet (Anmeldung auf einem anderen Gerät)
+    doLogout();
+    $("login-err").textContent = "Sitzung abgelaufen, bitte neu anmelden.";
+  }
   if (!r.ok) throw new Error(await r.text());
   return r;
 }

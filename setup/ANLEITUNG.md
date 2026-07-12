@@ -10,7 +10,7 @@ TikTok Songs merkt sich die Musik aus TikTok-Videos. Video teilen oder Link spei
 
 1. Diese Datei aufs Handy schicken oder den Link im Handy-Browser öffnen und herunterladen. Datei: `musik_app.apk` (alternativ der Download-Link, siehe unten).
 2. Die heruntergeladene APK antippen. Android warnt vor unbekannten Quellen, einmal **"Trotzdem installieren"** bzw. der Quelle erlauben.
-3. App öffnen, **"Konto erstellen"** antippen. Benutzername und Passwort ausdenken und den **Einladungs-Key** eintragen, den du vom Admin bekommen hast.
+3. App öffnen, **"Konto erstellen"** antippen. Benutzername und Passwort ausdenken und den **Einladungs-Key** eintragen, den du vom Admin bekommen hast. Account-Sharing ist nicht erlaubt, pro Konto laufen maximal 3 Anmeldungen (App, Browser, Erweiterung), jede weitere wirft die älteste raus.
 4. Benachrichtigungen erlauben, wenn die App fragt (sonst siehst du nicht, welcher Song erkannt wurde).
 5. Updates macht die App selbst. Wenn eine neue Version existiert, erscheint oben ein Banner, einmal **Aktualisieren** tippen. Beim allerersten Update fragt Android einmalig, ob die App aus dieser Quelle installieren darf, das erlauben.
 
