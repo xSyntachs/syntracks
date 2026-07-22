@@ -8,3 +8,5 @@ build-log.txt
 .idea/
 *.iml
 __pycache__/
+
+CLAUDE.md
