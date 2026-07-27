@@ -494,7 +494,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_file(self, data, content_type, filename=None):
+    def send_file(self, data, content_type, filename=None, no_store=False):
         # Ohne Range-Support (206) kann kein Browser und kein MediaPlayer im Audio spulen
         total = len(data)
         start, end, code = 0, total - 1, 200
@@ -518,6 +518,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Accept-Ranges", "bytes")
+        if no_store:
+            self.send_header("Cache-Control", "no-store, must-revalidate")
         if code == 206:
             self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
         if filename:
@@ -738,7 +740,7 @@ class Handler(BaseHTTPRequestHandler):
                               "application/json", no_store=True)
         if path == "/extension.zip" and (BASE / "extension.zip").exists():
             data = (BASE / "extension.zip").read_bytes()
-            return self.send_file(data, "application/zip", "syntracks_extension.zip")
+            return self.send_file(data, "application/zip", "syntracks_extension.zip", no_store=True)
         if path == "/app.apk" and (BASE / "app.apk").exists():
             data = (BASE / "app.apk").read_bytes()
             self.send_response(200)

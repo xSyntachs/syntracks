@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+val keystoreProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
+fun keystoreSecret(name: String): String =
+    System.getenv(name) ?: keystoreProps.getProperty(name) ?: ""
 
 android {
     namespace = "de.xsyntachs.tiktoksongs"
@@ -21,9 +30,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = rootProject.file("release.keystore")
-            storePassword = "tiktoksongs-2026"
+            storePassword = keystoreSecret("KEYSTORE_PASSWORD")
             keyAlias = "tiktoksongs"
-            keyPassword = "tiktoksongs-2026"
+            keyPassword = keystoreSecret("KEYSTORE_PASSWORD")
         }
     }
 

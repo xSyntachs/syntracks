@@ -10,3 +10,4 @@ build-log.txt
 __pycache__/
 
 CLAUDE.md
+keystore.properties

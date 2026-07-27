@@ -26,6 +26,8 @@ function videoUrlFor(button) {
   const item = button.closest('[data-e2e="recommend-list-item-container"], article');
   const link = item?.querySelector('a[href*="/video/"], a[href*="/photo/"]');
   if (link) return link.href;
+  const id = item?.dataset.ttsId;
+  if (id) return `https://www.tiktok.com${item.querySelector('a[href^="/@"]')?.getAttribute("href") || "/@i"}/video/${id}`;
   if (location.pathname.includes("/video/") || location.pathname.includes("/photo/")) return location.href;
   return null;
 }
@@ -45,8 +47,8 @@ function saveVideo(button) {
 
 function injectButtons() {
   document.querySelectorAll('[data-e2e="share-icon"]').forEach((shareIcon) => {
-    const wrapper = shareIcon.closest("button")?.parentElement;
-    if (!wrapper || wrapper.parentElement.querySelector(".tts-save")) return;
+    const wrapper = shareIcon.closest("button")?.parentElement || shareIcon.parentElement;
+    if (!wrapper?.parentElement || wrapper.parentElement.querySelector(".tts-save")) return;
     const holder = document.createElement("div");
     holder.className = "tts-save";
     holder.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px";
