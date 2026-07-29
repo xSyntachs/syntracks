@@ -4,7 +4,6 @@ let userName = localStorage.getItem("user") || "";
 let isAdmin = false, mayDownload = false, songs = [], lastPending = [], filter = "ALL", view = "SONGS", registerMode = false;
 let playing = null, pollTimer = null;
 let page = 1;
-// Die Seitengröße folgt der Fensterhöhe, damit die Liste nie über den Bildschirm hinausläuft
 let perPage = 8, totalPages = 1;
 let refitting = false;
 const ROW_HEIGHT = 88;
@@ -20,7 +19,6 @@ function T(key, vars) {
 }
 
 const audio = new Audio();
-// Gehör ist logarithmisch: Regler-Wert quadriert ergibt eine brauchbare Lautstärkekurve
 const sliderToVolume = (v) => Math.pow(v / 100, 2);
 let volSlider = parseInt(localStorage.getItem("volSlider") || "25", 10);
 audio.volume = sliderToVolume(volSlider);
@@ -55,7 +53,6 @@ async function api(path, opts = {}) {
   opts.headers = Object.assign({ "X-Token": token || "", "Accept-Language": LANG }, opts.headers);
   const r = await fetch(path, opts);
   if (r.status === 401 && token) {
-    // Sitzung wurde serverseitig beendet (Anmeldung auf einem anderen Gerät)
     doLogout();
     $("login-err").textContent = T("session_expired");
   }
@@ -64,7 +61,6 @@ async function api(path, opts = {}) {
 }
 
 async function readError(response) {
-  // Bei einem Neustart antwortet der Proxy mit einer HTML-Seite, die roh im Fehlerfeld landen würde
   const text = (await response.text()).trim();
   return !text || text.startsWith("<") || text.length > 200
     ? `${T("server_error")} (${response.status})` : text;
@@ -111,7 +107,6 @@ function applyTheme(mode) {
   else { localStorage.setItem("theme", mode); document.documentElement.dataset.theme = mode; }
 }
 
-/* ---------- Player ---------- */
 function playSource(id, src, name, artist, artwork) {
   playing = { clip: id };
   audio.src = src;
@@ -163,7 +158,6 @@ $("pb-vol").oninput = () => {
 };
 $("pb-close").onclick = stopPlay;
 
-/* ---------- Laden ---------- */
 async function load() {
   try {
     const data = await (await api("/songs")).json();
@@ -206,7 +200,6 @@ function renderStats() {
     el.onclick = () => { view = el.dataset.v; page = 1; renderStats(); render(); });
 }
 
-/* ---------- Empfehlungen ---------- */
 let recs = null, recsLoading = false;
 async function loadRecs() {
   if (recsLoading) return;
@@ -217,11 +210,9 @@ async function loadRecs() {
   render();
 }
 
-/* ---------- Rendern ---------- */
 function fitPerPage() {
   const list = $("list");
   const card = list.querySelector(".card");
-  // Gemessen statt geschätzt, sonst wird die letzte Zeile angeschnitten
   const rowHeight = card ? card.getBoundingClientRect().height + 8 : ROW_HEIGHT;
   const next = Math.max(3, Math.floor(list.clientHeight / rowHeight));
   const changed = next !== perPage;
@@ -232,7 +223,6 @@ function fitPerPage() {
 function pagerHtml(total) {
   const pages = Math.ceil(total / perPage);
   if (pages < 2) return "";
-  // Bei vielen Seiten nur Anfang, Umgebung der aktuellen Seite und Ende zeigen
   const wanted = new Set([1, pages, page, page - 1, page + 1]);
   if (page <= 3) [2, 3, 4].forEach(n => wanted.add(n));
   if (page >= pages - 2) [pages - 1, pages - 2, pages - 3].forEach(n => wanted.add(n));
@@ -320,7 +310,6 @@ function render() {
   const jump = $("page-jump");
   if (jump) jump.oninput = () => {
     const wanted = parseInt(jump.value, 10);
-    // Erst springen, wenn die Zahl im gültigen Bereich liegt, sonst zappelt es bei jeder Ziffer
     if (!wanted || wanted < 1 || wanted > totalPages) return;
     const keep = jump.value;
     goToPage(wanted, totalPages);
@@ -352,7 +341,6 @@ function render() {
   });
 }
 
-/* ---------- Menüs ---------- */
 function closeMenu() { document.querySelectorAll(".menu").forEach(m => m.remove()); }
 document.addEventListener("click", closeMenu);
 
@@ -453,7 +441,6 @@ document.querySelector(".profile-wrap").onmouseleave = () => {
   menuTimer = setTimeout(() => { if (!document.querySelector(".menu:hover")) closeMenu(); }, 220);
 };
 
-/* ---------- Overlays ---------- */
 function modal(title, bodyHtml) {
   const ov = document.createElement("div");
   ov.className = "overlay";
@@ -669,7 +656,6 @@ async function openUserLibrary(name) {
   renderLib();
 }
 
-/* ---------- Auth ---------- */
 async function doAuth() {
   $("login-err").textContent = "";
   try {
@@ -703,7 +689,6 @@ function setRegisterMode(on) {
   $("login-btn").textContent = registerMode ? T("create_account") : T("sign_in");
   $("toggle-register").textContent = registerMode ? T("already_account") : T("new_here");
   $("pass2").classList.toggle("hidden", !registerMode);
-  // Beim Wechsel leeren, sonst wandert die Anmeldeeingabe in die Registrierung
   for (const id of ["user", "pass", "pass2"]) $(id).value = "";
   $("login-err").textContent = "";
 }
@@ -712,7 +697,6 @@ $("search").addEventListener("input", () => { page = 1; render(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
 addEventListener("resize", () => { if (fitPerPage()) render(); });
 
-// In der Liste blättert das Rad die Seiten weiter, gescrollt wird hier nichts
 let wheelLock = 0;
 $("list").addEventListener("wheel", (ev) => {
   ev.preventDefault();

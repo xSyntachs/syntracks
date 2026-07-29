@@ -67,7 +67,6 @@ function injectButtons() {
     holder.appendChild(label);
     wrapper.parentElement.insertBefore(holder, wrapper.nextSibling);
   });
-  // Browse-Modal (Video aus Profil/Explore geöffnet): horizontale Icon-Reihe, kompakter Button ohne Label
   document.querySelectorAll('[data-e2e="browse-share-group"]').forEach((group) => {
     if (group.querySelector(".tts-save")) return;
     const btn = document.createElement("button");
@@ -82,6 +81,5 @@ function injectButtons() {
   });
 }
 
-// TikTok ist eine SPA, die Action-Leisten kommen und gehen beim Scrollen
 new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
 injectButtons();

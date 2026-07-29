@@ -36,9 +36,6 @@ CLIPS.mkdir(exist_ok=True)
 I18N = json.loads((BASE / "i18n.json").read_text(encoding="utf-8"))
 LANGS = ("en", "de", "es", "fr", "pt", "tr")
 
-# Ein Job kostet einen yt-dlp-Download plus bis zu 16 Shazam-Anfragen. Mehr Worker
-# holen die Downloads parallel, die Erkennung selbst bleibt durch SHAZAM_GATE seriell,
-# weil shazamio bei schnellen Serien mit ServerDisconnectedError abbricht.
 WORKERS = 3
 SHAZAM_GATE = threading.Semaphore(1)
 
@@ -72,9 +69,6 @@ def hash_pw(password, salt):
     return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
 
 
-# Jede Anmeldung ist eine eigene Sitzung, die älteste fällt hinten raus. Der Wert ist
-# hoch, weil der Token im iPhone-Kurzbefehl fest verdrahtet ist und bei knapper Rotation
-# still ungültig würde. Alte users.json-Einträge haben noch "token".
 MAX_SESSIONS = 50
 
 
@@ -122,7 +116,6 @@ def clip_key(url):
 
 
 def download_clip(url):
-    """Lädt das volle TikTok-Audio (für Shazam) und schneidet daraus den 25-s-Preview-Clip."""
     preview = CLIPS / f"{clip_key(url)}.mp3"
     audio = CLIPS / f"audio_{clip_key(url)}.mp3"
     if not audio.exists():
@@ -163,7 +156,6 @@ def tiktok_url(text):
     return None
 
 
-# TikTok lokalisiert das "original sound"-Label nach Uploader-Sprache, ein echtes Flag liefert yt-dlp nicht
 ORIGINAL_NON_LATIN = {"الصوت الأصلي", "оригинальный звук", "оригінальний звук", "オリジナル楽曲",
                       "오리지널 사운드", "原声", "原聲", "เสียงต้นฉบับ", "צליל מקורי",
                       "πρωτότυπος ήχος", "âm thanh gốc"}
@@ -211,23 +203,13 @@ def audio_duration(path):
 
 
 def recognize(clip):
-    # Das Lied liegt nicht immer am Anfang, also mehrere Stellen des Videos probieren.
-    # loudnorm zieht leise hinterlegte Musik hoch, sonst matcht Shazam Voiceover-Videos nicht.
     duration = audio_duration(clip)
     offsets = [0.0] if duration <= 30 else sorted({0.0, duration * 0.35, duration * 0.7, max(0.0, duration - 22)})
-    # Fantasie-Treffer kommen vor (echtes Beispiel: Ultra-Slowed-Video, erster Kandidat lieferte einen
-    # völlig fremden Song mit Skew 0.048). Deshalb kein First-Hit, sondern Voting: derselbe Song muss
-    # aus einer zweiten Stelle/Rate bestätigt werden. Verglichen wird NUR der Titel ohne
-    # Klammer-Zusätze, weil dieselbe Nummer je Tempo-Stufe auf verschiedene Katalog-Einträge
-    # matcht (Original vs. Sped-Up/Slowed-Bootlegs anderer "Artists"). Skew taugt nicht als
-    # Einzeltreffer-Kriterium, echte und falsche liegen im selben Bereich, darum bekommt ein
-    # Einzeltreffer eine gezielte Zweitprobe.
     def base_key(match):
         return _norm(re.sub(r"[(\[].*?[)\]]", "", match["title"]))
 
     candidates = []
     with tempfile.TemporaryDirectory() as tmp:
-        # Slowed-Versionen sind auch pitch-verschoben, asetrate kehrt beides um (atempo allein reicht nicht)
         for rate in (1.0, 1.25, 1.4, 1.7, 0.8):
             for offset in offsets:
                 candidate = f"{tmp}/r{rate}o{int(offset)}.mp3"
@@ -245,9 +227,6 @@ def recognize(clip):
                           flush=True)
                     continue
                 candidates.append((abs(skews.get("frequencyskew") or 0), rate, offset, match))
-                # Nur verschiedene Tempo-Stufen zählen als unabhängige Stimmen. Derselbe
-                # Fantasie-Treffer wiederholt sich an benachbarten Stellen desselben Audios
-                # (echter Fall: "the reaper is so tuff" zweimal aus demselben verfremdeten Edit).
                 if len({r for _, r, _, m in candidates if base_key(m) == base_key(match)}) >= 2:
                     break
             else:
@@ -259,8 +238,6 @@ def recognize(clip):
     votes = len({r for _, r, _, m in candidates if base_key(m) == winner_key})
     skew, rate, offset, match = min((c for c in candidates if base_key(c[3]) == winner_key), key=lambda c: c[0])
     if votes < 2:
-        # Zweitprobe möglichst weit weg vom Fundort (bei kurzen Videos mit leicht anderem
-        # Tempo), ein echter Song läuft durchs ganze Video, ein Fantasie-Treffer zerfällt
         if duration > 34:
             probe_offset = 0.0 if offset > duration / 2 else max(0.0, duration - 22)
             probe_rate = rate
@@ -286,9 +263,6 @@ def recognize(clip):
     elif rate < 1:
         hit["spedup"] = True
     hit["track"] = title
-    # Shazam liefert Apple-Preview und Cover direkt mit, rettet Songs die iTunes-Suche nicht
-    # findet. Bei Tempo-Varianten wäre die Preview aber die normale Version, dann lieber
-    # der TikTok-Clip als Fallback.
     if rate == 1:
         uris = [a.get("uri") for a in (match.get("hub") or {}).get("actions", [])]
         hit["preview"] = next((u for u in uris if u and ".m4a" in u), None)
@@ -301,11 +275,7 @@ def download_full(match):
     if path.exists():
         return path
     name = song_name(match)
-    # Erkannte Tracks existieren als echtes Release, da liefert YouTube die volle Länge der exakten
-    # Version. Nur unerkannte und Caption-Sounds haben kein Release, da bleibt das TikTok-Audio.
     if match.get("recognized") or not match.get("original", is_original_sound(match["track"])):
-        # Erkannt aus einer Tempo-Variante heißt, das Video hatte die Slowed/Sped-Up-Fassung,
-        # dann soll die Volllänge auch die sein und nicht das normale Release
         variant = " slowed" if match.get("slowed") else " sped up" if match.get("spedup") else ""
         source = f'ytsearch1:"{name}" {match["artist"]}{variant}'
     else:
@@ -337,7 +307,6 @@ def _norm(s):
 
 
 def itunes_track(artist, name):
-    # Nur validierte Treffer, ein falscher Song ist schlechter als der Clip-Fallback
     plain = re.sub(r"\(.*?\)", "", name).strip() or name
     want_artist, want_track = _norm(artist), _norm(plain)
     for term in dict.fromkeys((f"{artist} {name}", f"{artist} {plain}")):
@@ -392,7 +361,6 @@ def recommendations(username, limit=10):
     cached = REC_CACHE.get(username)
     if cached and cached[0] == cache_key:
         return cached[1]
-    # Favoriten zuerst und mit mehr verwandten Artists, sie wiegen schwerer als bloß Gespeichertes
     recent = [s for s in all_songs if not s.get("similar") and not s.get("favorite")][-20:]
     seeds = list(reversed(favorites)) + list(reversed(recent))
     have = {_norm(f"{s['artist']} {song_name(s)}") for s in all_songs}
@@ -451,9 +419,6 @@ def find_song(username, key):
 
 
 def bump_song(username, predicate):
-    """Schiebt einen vorhandenen Eintrag mit frischem Zeitstempel nach oben, statt ihn zu duplizieren."""
-    # load_songs nimmt selbst FILE_LOCK (nicht reentrant), also lesen wie /delete und /favorite
-    # außerhalb des Locks und nur das Schreiben sperren
     songs = load_songs(username)
     hit = next((s for s in songs if predicate(s)), None)
     if not hit:
@@ -479,13 +444,11 @@ def songs_payload(username):
 
 
 def worker():
-    # ponytail: eine Queue, ein Worker, Jobs nur im RAM. Stirbt der Prozess mitten im Job, ist der Share weg.
     while True:
         username, url = JOBS.get()
         try:
             PENDING[username][url]["stage"] = "loading_video"
             song = extract(url)
-            # Schon gespeichertes Video erneut geteilt -> Eintrag rutscht nach oben
             if bump_song(username, lambda s: s["url"] == song["url"]):
                 continue
             try:
@@ -493,7 +456,6 @@ def worker():
             except Exception:
                 clip = None
             if clip:
-                # Shazam läuft immer, TikToks eigene Song-Metadaten sind oft falsch oder nur der Sound-Titel
                 PENDING[username][url]["stage"] = "identifying"
                 with SHAZAM_GATE:
                     hit = recognize(clip)
@@ -504,8 +466,6 @@ def worker():
                     if caption:
                         song.update({"track": caption, "from_caption": True})
             PENDING[username][url]["stage"] = "saving"
-            # Gleicher Song aus einem anderen Video landet nicht nochmal in der Liste,
-            # der vorhandene Eintrag rutscht stattdessen nach oben
             if song.get("track") and bump_song(
                     username,
                     lambda s: _norm(s.get("track")) == _norm(song["track"])
@@ -538,8 +498,6 @@ class Handler(BaseHTTPRequestHandler):
         return "en"
 
     def client_ip(self):
-        # Hinter Cloudflare und dem Nginx Proxy Manager wäre client_address immer der Proxy,
-        # damit würde ein Limit alle Nutzer zugleich treffen
         return (self.headers.get("CF-Connecting-IP")
                 or self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
                 or self.client_address[0])
@@ -555,7 +513,6 @@ class Handler(BaseHTTPRequestHandler):
             return True
 
     def reply(self, code, text, content_type="text/plain; charset=utf-8", no_store=False):
-        # Bekannte Schlüssel werden übersetzt, JSON-Nutzlasten gehen unverändert durch
         body = (t(text, self.lang()) if text in I18N else text).encode()
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -566,7 +523,6 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def send_file(self, data, content_type, filename=None, no_store=False):
-        # Ohne Range-Support (206) kann kein Browser und kein MediaPlayer im Audio spulen
         total = len(data)
         start, end, code = 0, total - 1, 200
         rng = self.headers.get("Range", "")
@@ -691,7 +647,6 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(401, "old_password_wrong")
                 info["salt"] = secrets.token_hex(16)
                 info["hash"] = hash_pw(new, info["salt"])
-                # Passwortwechsel wirft alle anderen Sitzungen raus, nur die eigene bleibt
                 own = self.headers.get("X-Token") or (parse_qs(urlsplit(self.path).query).get("token") or [""])[0]
                 info["tokens"] = [own]
                 info.pop("token", None)
@@ -769,7 +724,6 @@ class Handler(BaseHTTPRequestHandler):
                 salt = secrets.token_hex(16)
                 token = secrets.token_hex(24)
                 users[name] = {"salt": salt, "hash": hash_pw(password, salt), "tokens": [token]}
-                # Erster registrierter Nutzer erbt die Alt-Songs aus der Zeit vor den Konten
                 legacy = BASE / "songs.jsonl"
                 if len(users) == 1 and legacy.exists():
                     shutil.move(str(legacy), str(songs_path(name)))
@@ -786,7 +740,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
-        # no_store, sonst kleben Browser und Cloudflare auf alten UI-Ständen fest
         if path == "/":
             return self.reply(200, (BASE / "index.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8", no_store=True)
@@ -900,14 +853,12 @@ class Handler(BaseHTTPRequestHandler):
             name = song_name(match)
             preview = match.get("preview")
             if match.get("similar"):
-                # Deezer-Preview-URLs laufen nach kurzer Zeit ab, pro Abruf frisch auflösen
                 try:
                     term = quote(f"{match['artist']} {match['track']}")
                     hits = deezer(f"/search?q={term}").get("data") or []
                     preview = next((h.get("preview") for h in hits if h.get("preview")), None) or preview
                 except Exception:
                     pass
-            # Bei Tempo-Varianten wäre jede Katalog-Preview die normale Fassung, da bleibt der TikTok-Clip
             if match.get("slowed") or match.get("spedup"):
                 preview = None
             elif not preview and name != "Original-Sound":
@@ -930,7 +881,6 @@ def safe_name(name):
 
 
 def sweep_cache():
-    # Ohne das wächst clips/ mit jedem geteilten Video unbegrenzt weiter
     while True:
         cutoff = datetime.now(timezone.utc).timestamp() - CACHE_MAX_AGE_DAYS * 86400
         for path in CLIPS.iterdir():

@@ -3,7 +3,7 @@
 input, textarea { user-select: text; -webkit-user-select: text; }
 
 :root {
-  /* Ohne das zeichnet der Browser Auswahlfelder, Scrollleisten und Autofill im hellen Standard */
+
   color-scheme: light;
   --brand: #E9E64A;
   --paper: #F7F6F0;
@@ -47,11 +47,9 @@ svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-wid
          stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
 :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
-/* Auf der gelben Fläche bleibt der Text in beiden Modi dunkel, --ink wäre dort unlesbar hell */
 .masthead { color: #121212; }
 .masthead :focus-visible { outline-color: #121212; }
 
-/* Buttons */
 .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 13px 22px; border: none; border-radius: var(--r); cursor: pointer;
   font-size: 15px; font-weight: 700; width: 100%;
@@ -71,7 +69,6 @@ svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-wid
             font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
             min-height: 44px; }
 
-/* Inputs */
 input[type=text], input[type=password], input[type=search] {
   width: 100%; background: transparent; border: 2px solid var(--line); border-radius: var(--r);
   color: var(--ink); padding: 12px 14px; font-size: 16px; min-height: 48px; outline: none; }
@@ -83,13 +80,11 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   caret-color: var(--ink);
   transition: background-color 99999s ease-in-out 0s; }
 
-/* Login */
 #login { min-height: 100dvh; display: flex; flex-direction: column; }
 .login-body { flex: 1; display: flex; align-items: center; justify-content: center;
               padding: var(--s3) 14px; overflow-y: auto; }
 .login-box { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--s3); margin: auto; }
 .login-form, .login-extras { display: flex; flex-direction: column; gap: var(--s1); }
-/* Ab Tablet stehen Anmeldung und Downloads nebeneinander, sonst klafft die Fläche */
 @media (min-width: 780px) {
   .login-box { width: min(820px, 100%); flex-direction: row; align-items: flex-start; gap: var(--s4); }
   .login-form, .login-extras { flex: 1; }
@@ -118,8 +113,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
               flex-direction: column; gap: var(--s2); font-size: 14px; }
 .howto-list b { color: var(--ink); }
 
-/* App-Layout, die gelbe Fläche geht über die volle Breite, der Inhalt bleibt zentriert.
-   Feste Höhe, damit nie die ganze Seite scrollt, geblättert wird über den Pager. */
 #app { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
 #app.with-player { padding-bottom: 84px; }
 .masthead { background: var(--brand); padding: 13px 14px; flex: none; }
@@ -127,7 +120,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .masthead-inner { display: flex; align-items: center; gap: var(--s2); }
 .masthead .titles { flex: 1; min-width: 0; }
 .masthead h1 { font-size: 27px; line-height: 1; }
-/* Das Kontomenü öffnet beim Zeigen und trägt den Namen in der Kopfzeile */
 .profile-wrap { position: relative; flex: none; }
 #whoami { display: none; }
 .content { flex: 1; display: flex; flex-direction: column; padding: 0 14px 14px; min-height: 0; }
@@ -154,7 +146,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 #search { margin-bottom: var(--s2); flex: none; }
 #list { flex: 1; min-height: 0; overflow: hidden; }
 
-/* Seitenblättern statt endloser Liste */
 #pager { flex: none; }
 .pager { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
          margin-top: 10px; }
@@ -171,7 +162,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .page-jump::-webkit-outer-spin-button, .page-jump::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .page-jump:focus { border-color: var(--ink); outline: none; }
 
-/* Zeilen */
 .card { background: var(--row); color: var(--row-ink); border-radius: var(--r);
         padding: 11px 12px; margin-bottom: var(--s1); display: flex; align-items: center; gap: 11px; }
 .card.playing { box-shadow: inset 0 0 0 2px var(--brand); }
@@ -195,7 +185,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .card .icon-btn { border: none; color: var(--row-dim); }
 .card .icon-btn:hover { color: var(--row-ink); }
 
-/* Verarbeitung */
 .pendcard { border: 2px solid var(--line); border-radius: var(--r); padding: 12px;
             margin-bottom: var(--s1); }
 .pendrow { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 700; }
@@ -206,7 +195,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .pendbar { height: 4px; background: var(--line); margin-top: 10px; overflow: hidden; }
 .pendbar > div { height: 100%; background: var(--brand); transition: width .8s; }
 
-/* Menü */
 .menu { position: fixed; background: var(--paper); border: 2px solid var(--line);
         border-radius: var(--r); min-width: 236px; max-width: calc(100vw - 24px); z-index: 60;
         padding: 5px 0; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
@@ -219,7 +207,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .menu button.danger { color: var(--danger); }
 .menu button.danger:hover { background: var(--danger); color: var(--paper); }
 
-/* Player */
 #playerbar { position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(10px, env(safe-area-inset-bottom));
   width: min(692px, calc(100vw - 20px)); background: var(--row); color: var(--row-ink);
@@ -248,7 +235,6 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: none; b
 #pb-seek { flex: 1; min-width: 50px; }
 #pb-vol { width: 70px; flex-shrink: 0; }
 
-/* Overlays */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 80;
            display: flex; align-items: center; justify-content: center; padding: var(--s2); }
 .modal { background: var(--paper); border: 2px solid var(--ink); border-radius: var(--r);
@@ -276,7 +262,6 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: none; b
 #toast.on { opacity: 1; }
 .hidden { display: none !important; }
 
-/* Konten */
 .adm-row { display: flex; align-items: center; gap: 11px; padding: 10px;
            border: 2px solid var(--line); border-radius: var(--r); flex-wrap: wrap; }
 .adm-av { width: 38px; height: 38px; border-radius: 3px; flex: none; display: grid; place-items: center;
