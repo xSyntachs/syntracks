@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -595,7 +596,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     AuroraBackground {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -662,12 +663,12 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             ) {
                 Box(
                     Modifier
-                        .clip(RoundedCornerShape(99.dp))
+                        .clip(RoundedCornerShape(5.dp))
                         .background(SolidColor(Brand))
                         .clickable { showStats = true }
                         .padding(horizontal = 16.dp, vertical = 9.dp),
                 ) {
-                    Text("Dein Geschmack", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ink)
+                    Text("Dein Geschmack", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
                 }
                 if (view == "SONGS") {
                     Box {
@@ -685,7 +686,10 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier.padding(horizontal = 14.dp),
+            ) {
                 listOf("SONGS" to "Song Verlauf", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
                     Column(
                         Modifier.clickable { view = key },
@@ -844,11 +848,17 @@ private fun SongList(
     onDelete: (Song) -> Unit,
     onSaveRec: (SimilarTrack) -> Unit,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    var page by remember(shown.size, showRecs, filtered) { mutableStateOf(1) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val perPage = ((maxHeight - 60.dp) / 108.dp).toInt().coerceAtLeast(3)
+        val pageCount = ((shown.size + perPage - 1) / perPage).coerceAtLeast(1)
+        val current = page.coerceIn(1, pageCount)
+        val pageItems = shown.drop((current - 1) * perPage).take(perPage)
+        Column(Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
         clipboardSuggestion?.let {
             item {
                 GlassBox {
@@ -910,7 +920,7 @@ private fun SongList(
         if (feed != null && shown.isEmpty() && feed.pending == 0 && !showRecs) {
             item { EmptyState(filtered) }
         }
-        items(shown, key = { it.savedAt }) { song ->
+        items(pageItems, key = { it.savedAt }) { song ->
             Box(Modifier.animateItem()) {
                 SongCard(
                     song = song,
@@ -927,6 +937,53 @@ private fun SongList(
                 )
             }
         }
+            }
+            if (!showRecs && pageCount > 1) Pager(current, pageCount) { page = it }
+        }
+    }
+}
+
+@Composable
+private fun Pager(page: Int, pageCount: Int, onPick: (Int) -> Unit) {
+    val wanted = buildSet {
+        addAll(listOf(1, pageCount, page, page - 1, page + 1))
+        if (page <= 3) addAll(listOf(2, 3, 4))
+        if (page >= pageCount - 2) addAll(listOf(pageCount - 1, pageCount - 2, pageCount - 3))
+    }
+    val numbers = wanted.filter { it in 1..pageCount }.sorted()
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp),
+    ) {
+        PagerStep("\u2039", enabled = page > 1) { onPick(page - 1) }
+        numbers.forEachIndexed { index, number ->
+            if (index > 0 && number - numbers[index - 1] > 1) {
+                Text("\u2026", fontSize = 13.sp, color = Scheme.onSurfaceVariant)
+            }
+            PagerStep("$number", active = number == page) { onPick(number) }
+        }
+        PagerStep("\u203a", enabled = page < pageCount) { onPick(page + 1) }
+    }
+}
+
+@Composable
+private fun PagerStep(label: String, active: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(if (active) Brand else Color.Transparent)
+            .border(2.dp, if (active) Brand else Line, RoundedCornerShape(5.dp))
+            .clickable(enabled = enabled && !active) { onClick() },
+    ) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (active) Ink else if (enabled) Scheme.onSurface else Scheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1246,13 +1303,16 @@ private fun AdminRow(
 
 @Composable
 private fun ActionPill(label: String, color: Color, onClick: () -> Unit) {
-    Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(50))
-            .background(Color.White.copy(alpha = 0.06f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp))
+            .clip(RoundedCornerShape(5.dp))
+            .border(2.dp, Line, RoundedCornerShape(5.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color)
+    }
 }
 
 @Composable
@@ -1373,19 +1433,21 @@ private fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
 
 @Composable
 private fun SourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label, fontSize = 12.sp) },
-        shape = RoundedCornerShape(99.dp),
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = GlassCard,
-            labelColor = Scheme.onSurfaceVariant,
-            selectedContainerColor = Brand,
-            selectedLabelColor = Color.White,
-        ),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = if (selected) 0.3f else 0.12f)),
-    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .border(2.dp, if (selected) Scheme.onSurface else Line, RoundedCornerShape(5.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (selected) Scheme.onSurface else Scheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -1570,20 +1632,19 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                     )
                     Spacer(Modifier.height(5.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = accent.copy(alpha = 0.28f), shape = RoundedCornerShape(99.dp)) {
-                            Text(
-                                song.source.label,
-                                Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                fontSize = 10.sp,
-                                color = Color.White.copy(alpha = 0.9f),
-                            )
-                        }
+                        Text(
+                            song.source.label.uppercase(),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.1.sp,
+                            color = Brand,
+                        )
                         if (song.favorite) {
-                            Spacer(Modifier.width(6.dp))
-                            Icon(Icons.Default.Star, "Favorit", tint = Gold, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Icon(Icons.Default.Star, "Favorit", tint = Brand, modifier = Modifier.size(12.dp))
                         }
-                        Spacer(Modifier.width(6.dp))
-                        Text(relativeTime(song.savedAt), fontSize = 11.sp, color = Scheme.onSurfaceVariant)
+                        Spacer(Modifier.width(10.dp))
+                        Text(relativeTime(song.savedAt), fontSize = 10.sp, color = Scheme.onSurfaceVariant)
                     }
                 }
                 Box {
