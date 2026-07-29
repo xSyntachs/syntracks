@@ -1,7 +1,11 @@
 package de.xsyntachs.tiktoksongs
 
 import androidx.compose.foundation.BorderStroke
+import android.app.LocaleManager
+import android.os.Build
+import android.os.LocaleList
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -114,6 +118,54 @@ fun DialogButton(label: String, onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontWeight = FontWeight.Bold, color = Color.White)
+    }
+}
+
+private val APP_LANGS = listOf(
+    "" to R.string.language_system,
+    "en" to null, "de" to null, "es" to null, "fr" to null, "pt" to null, "tr" to null,
+)
+
+private val LANG_NAMES = mapOf(
+    "en" to "English", "de" to "Deutsch", "es" to "Español",
+    "fr" to "Français", "pt" to "Português", "tr" to "Türkçe",
+)
+
+@Composable
+fun LanguageDialog(onClose: () -> Unit) {
+    val context = LocalContext.current
+    val current = remember {
+        if (Build.VERSION.SDK_INT >= 33) {
+            context.getSystemService(LocaleManager::class.java).applicationLocales
+                .takeIf { !it.isEmpty }?.get(0)?.language.orEmpty()
+        } else ""
+    }
+    OverlayFrame(stringResource(R.string.language), onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 4.dp)) {
+            APP_LANGS.forEach { (code, labelRes) ->
+                val label = labelRes?.let { stringResource(it) } ?: LANG_NAMES.getValue(code)
+                val active = code == current
+                Box(
+                    Modifier.fillMaxWidth().height(46.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(if (active) Brand else Color.Transparent)
+                        .border(2.dp, if (active) Brand else Line, RoundedCornerShape(5.dp))
+                        .clickable {
+                            if (Build.VERSION.SDK_INT >= 33) {
+                                context.getSystemService(LocaleManager::class.java).applicationLocales =
+                                    if (code.isEmpty()) LocaleList.getEmptyLocaleList()
+                                    else LocaleList.forLanguageTags(code)
+                            }
+                            onClose()
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        color = if (active) Ink else Scheme.onSurface)
+                }
+            }
+        }
     }
 }
 

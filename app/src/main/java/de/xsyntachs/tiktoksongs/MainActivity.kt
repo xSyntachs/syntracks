@@ -502,6 +502,10 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                             )
                         }
                         DropdownMenuItem(
+                            text = { Text(stringResource(R.string.language)) },
+                            onClick = { accountMenu = false; dialog = "language" },
+                        )
+                        DropdownMenuItem(
                             text = { Text(stringResource(R.string.sign_out)) },
                             onClick = { accountMenu = false; onLogout() },
                         )
@@ -698,6 +702,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             "rename" -> RenameDialog(onClose = { dialog = null }, onDone = { tick++ })
             "password" -> PasswordDialog(onClose = { dialog = null })
             "admin" -> AdminOverlay(onClose = { dialog = null })
+            "language" -> LanguageDialog(onClose = { dialog = null })
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }

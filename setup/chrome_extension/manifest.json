@@ -29,9 +29,15 @@
     },
     {
       "matches": ["https://www.tiktok.com/*"],
-      "js": ["content.js"]
+      "js": ["i18n.js", "content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["_locales/*/messages.json"],
+      "matches": ["https://www.tiktok.com/*"]
     }
   ],
   "permissions": ["activeTab", "storage", "tabs"],
-  "host_permissions": ["https://syntracks.xsyntachs.de/*"]
+  "host_permissions": ["https://syntracks.app/*"]
 }

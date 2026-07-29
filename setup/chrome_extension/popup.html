@@ -55,6 +55,9 @@
   .link-btn { background: none; border: none; color: var(--ink); cursor: pointer; font-size: 13px;
     font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; }
 
+  select.btn-ghost { appearance: none; -webkit-appearance: none; text-align: center;
+    text-align-last: center; font-family: inherit; font-size: 13px; min-height: 42px; }
+  select.btn-ghost option { background: var(--paper); color: var(--ink); }
   .msg { font-size: 13px; font-weight: 500; min-height: 18px; }
   .msg.err { color: var(--danger); }
   .msg.ok { color: var(--ok); }
@@ -86,7 +89,9 @@
     </div>
 
     <div class="msg" id="msg" role="alert"></div>
+    <select id="lang-pick" class="btn-ghost" aria-label="Language"></select>
   </div>
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

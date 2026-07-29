@@ -122,4 +122,6 @@
     <string name="src_original_saved">Tanınmadı, orijinal ses olarak kaydedildi</string>
     <string name="digest_channel">Haftalık özet</string>
     <string name="digest_title">Haftan</string>
+    <string name="language">Dil</string>
+    <string name="language_system">Sistemle aynı</string>
 </resources>

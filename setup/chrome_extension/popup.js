@@ -1,8 +1,8 @@
-const API = "https://syntracks.xsyntachs.de";
-const WEB = "https://syntracks.app";
+const API = "https://syntracks.app";
 
 const el = (id) => document.getElementById(id);
-const T = (key) => chrome.i18n.getMessage(key) || key;
+let T = (key) => key;
+let lang = "en";
 let registering = false;
 
 function applyText() {
@@ -26,7 +26,16 @@ function render(token, user) {
 }
 
 async function init() {
+  const texts = await ttsLoadTexts();
+  T = texts.text;
+  lang = texts.code;
   applyText();
+  el("lang-pick").innerHTML = Object.entries(TTS_LANGS).map(([code, label]) =>
+    `<option value="${code}"${code === texts.code ? " selected" : ""}>${label}</option>`).join("");
+  el("lang-pick").onchange = async () => {
+    await chrome.storage.local.set({ lang: el("lang-pick").value });
+    location.reload();
+  };
   const { token, user } = await chrome.storage.local.get(["token", "user"]);
   render(token, user);
 }
@@ -48,7 +57,7 @@ el("login").onsubmit = async (event) => {
   }
   el("login-btn").disabled = true;
   try {
-    const r = await fetch(API + (registering ? "/register" : "/login"), {
+    const r = await fetch(`${API}${registering ? "/register" : "/login"}?lang=${lang}`, {
       method: "POST",
       body: JSON.stringify({ user: el("user").value.trim(), pass: el("pass").value }),
     });
@@ -77,7 +86,7 @@ el("save-btn").onclick = async () => {
   }
   el("save-btn").disabled = true;
   try {
-    const r = await fetch(API + "/add", {
+    const r = await fetch(`${API}/add?lang=${lang}`, {
       method: "POST",
       headers: { "X-Token": token },
       body: tab.url,
@@ -91,10 +100,12 @@ el("save-btn").onclick = async () => {
   }
 };
 
-el("open-web").onclick = () => chrome.tabs.create({ url: WEB });
+el("open-web").onclick = () => chrome.tabs.create({ url: API });
 
 el("logout").onclick = async () => {
+  const { lang } = await chrome.storage.local.get("lang");
   await chrome.storage.local.clear();
+  if (lang) await chrome.storage.local.set({ lang });
   registering = false;
   el("pass2").classList.add("hidden");
   el("login-btn").textContent = T("sign_in");

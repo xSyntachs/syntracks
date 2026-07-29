@@ -1854,5 +1854,13 @@
     "fr": "Confirmer le nouveau mot de passe",
     "pt": "Confirmar a nova senha",
     "tr": "Yeni şifreyi onayla"
+  },
+  "language_system": {
+    "en": "Same as the system",
+    "de": "Wie im System",
+    "es": "Igual que el sistema",
+    "fr": "Comme le système",
+    "pt": "Igual ao sistema",
+    "tr": "Sistemle aynı"
   }
 }

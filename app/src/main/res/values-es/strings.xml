@@ -122,4 +122,6 @@
     <string name="src_original_saved">No reconocida, guardada como sonido original</string>
     <string name="digest_channel">Resumen semanal</string>
     <string name="digest_title">Tu semana</string>
+    <string name="language">Idioma</string>
+    <string name="language_system">Igual que el sistema</string>
 </resources>

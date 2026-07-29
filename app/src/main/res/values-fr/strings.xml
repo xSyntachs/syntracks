@@ -122,4 +122,6 @@
     <string name="src_original_saved">Non reconnu, enregistré comme son original</string>
     <string name="digest_channel">Bilan de la semaine</string>
     <string name="digest_title">Votre semaine</string>
+    <string name="language">Langue</string>
+    <string name="language_system">Comme le système</string>
 </resources>

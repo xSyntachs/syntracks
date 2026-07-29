@@ -4,7 +4,8 @@
 
   const BRAND = "#E9E64A";
   const INK = "#121212";
-  const T = (key) => chrome.i18n.getMessage(key) || key;
+  let T = (key) => key;
+  ttsLoadTexts().then(texts => { T = texts.text; });
 
   const NOTE_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="${INK}"
   stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
