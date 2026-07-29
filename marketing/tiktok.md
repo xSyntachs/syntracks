@@ -20,14 +20,19 @@ Profile picture is the cassette on yellow, `setup/chrome_extension/icon128.png`.
 
 ## The one format
 
-Twenty seconds, four beats. Do not vary this until forty videos are out.
+Fifteen seconds, four beats. Do not vary this until forty videos are out.
+
+Fifteen is not a style choice. TikTok now wants roughly seventy percent completion before it
+pushes a clip, up from fifty in 2024, and it checks watch time at three, ten and twenty
+seconds. A twenty second video has to hold almost everyone to the end. A fifteen second one
+does not.
 
 | Time | What is on screen | Why |
 |---|---|---|
-| 0:00 to 0:02 | The clip everybody knows, sound loud, one line of text on top | The hook has to be the song, not the app |
-| 0:02 to 0:08 | Same clip continues, text asks the question people are already asking | Recognition before curiosity |
-| 0:08 to 0:15 | Screen recording, share sheet, Syntracks, the name appears | The payoff, uncut, no speed ramp |
-| 0:15 to 0:20 | Artist and title large, then the handle | People screenshot this frame |
+| 0:00 to 0:03 | The clip everybody knows, sound loud, one line of text on top | Three seconds decide whether the video is shown at all |
+| 0:03 to 0:06 | Same clip continues, text asks the question already in the comments | Recognition before curiosity |
+| 0:06 to 0:12 | Screen recording, share sheet, Syntracks, the name appears | The payoff, uncut, no speed ramp |
+| 0:12 to 0:15 | Artist and title large, then the handle | People screenshot this frame, and rewatches count |
 
 No voiceover. Text on screen only, TikTok's own font, white on black bar. Never use the
 robot voice, it reads as low effort.
@@ -58,11 +63,11 @@ the wrong attention and the wrong audience.
 
 **One call to action, at the end, in text.** No link spam in comments, no follow for part two.
 
-**Post daily for three weeks before judging anything.** TikTok needs volume to place a new
-account. Fewer than twenty videos tells you nothing.
+**Post three to five times a week for three weeks before judging anything.** TikTok needs
+volume to place a new account. Fewer than twenty videos tells you nothing.
 
 ## What to measure
 
-Watch time to the end matters, nothing else does at the start. If people leave before the
-payoff at 0:08, the hook is wrong. If they leave after it, the search took too long on screen,
-cut the waiting.
+Completion rate first, average watch time second, everything else later. If people leave
+before the payoff at 0:06, the hook is wrong. If they leave after it, the search took too long
+on screen, cut the waiting. Rewatches and shares weigh more than likes.
