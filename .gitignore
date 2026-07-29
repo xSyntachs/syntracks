@@ -12,3 +12,5 @@ __pycache__/
 CLAUDE.md
 keystore.properties
 oauth.json
+marketing/out/
+marketing/_frames/
