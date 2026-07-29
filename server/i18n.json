@@ -1286,5 +1286,293 @@
     "fr": "La connexion a été annulée ou a échoué.",
     "pt": "O login foi cancelado ou falhou.",
     "tr": "Giriş iptal edildi veya başarısız oldu."
+  },
+  "ios_title": {
+    "en": "Syntracks on your iPhone",
+    "de": "Syntracks aufs iPhone",
+    "es": "Syntracks en tu iPhone",
+    "fr": "Syntracks sur votre iPhone",
+    "pt": "Syntracks no seu iPhone",
+    "tr": "iPhone'unuzda Syntracks"
+  },
+  "ios_intro": {
+    "en": "There is no iOS app. You build a shortcut once, then Syntracks sits in the TikTok share sheet.",
+    "de": "Es gibt keine iOS-App. Du baust einmal einen Kurzbefehl, danach steht Syntracks im Teilen-Menü von TikTok.",
+    "es": "No hay app para iOS. Creas un atajo una vez y Syntracks queda en el menú de compartir de TikTok.",
+    "fr": "Il n y a pas d application iOS. Vous créez un raccourci une fois, puis Syntracks apparaît dans le menu de partage de TikTok.",
+    "pt": "Não existe app para iOS. Você cria um atalho uma vez e o Syntracks fica no menu de compartilhamento do TikTok.",
+    "tr": "iOS uygulaması yok. Bir kez kısayol oluşturursun, sonra Syntracks TikTok paylaşım menüsünde durur."
+  },
+  "ios_time": {
+    "en": "Takes about two minutes",
+    "de": "Dauert etwa zwei Minuten",
+    "es": "Toma unos dos minutos",
+    "fr": "Prend environ deux minutes",
+    "pt": "Leva cerca de dois minutos",
+    "tr": "Yaklaşık iki dakika sürer"
+  },
+  "ios_part_one": {
+    "en": "Get your access code",
+    "de": "Zugangscode holen",
+    "es": "Consigue tu código de acceso",
+    "fr": "Récupérer votre code",
+    "pt": "Pegue seu código de acesso",
+    "tr": "Erişim kodunu al"
+  },
+  "ios_part_two": {
+    "en": "Build the shortcut",
+    "de": "Kurzbefehl bauen",
+    "es": "Crea el atajo",
+    "fr": "Créer le raccourci",
+    "pt": "Crie o atalho",
+    "tr": "Kısayolu oluştur"
+  },
+  "ios_part_three": {
+    "en": "Save your first song",
+    "de": "Ersten Song speichern",
+    "es": "Guarda tu primera canción",
+    "fr": "Enregistrer votre premier titre",
+    "pt": "Salve sua primeira música",
+    "tr": "İlk şarkını kaydet"
+  },
+  "ios_code_intro": {
+    "en": "Sign in below. Your code appears here and stays visible while you build the shortcut.",
+    "de": "Melde dich unten an. Dein Code erscheint hier und bleibt sichtbar, während du den Kurzbefehl baust.",
+    "es": "Inicia sesión abajo. Tu código aparece aquí y permanece visible mientras creas el atajo.",
+    "fr": "Connectez-vous ci-dessous. Votre code apparaît ici et reste visible pendant la création du raccourci.",
+    "pt": "Entre abaixo. Seu código aparece aqui e permanece visível enquanto você cria o atalho.",
+    "tr": "Aşağıdan giriş yap. Kodun burada belirir ve kısayolu oluştururken görünür kalır."
+  },
+  "ios_not_signed": {
+    "en": "Not signed in yet",
+    "de": "Noch nicht angemeldet",
+    "es": "Aún sin iniciar sesión",
+    "fr": "Pas encore connecté",
+    "pt": "Ainda não conectado",
+    "tr": "Henüz giriş yapılmadı"
+  },
+  "ios_s1": {
+    "en": "Open the Shortcuts app and tap the plus in the top right corner.",
+    "de": "Öffne die App Kurzbefehle und tippe oben rechts auf das Plus.",
+    "es": "Abre la app Atajos y toca el más en la esquina superior derecha.",
+    "fr": "Ouvrez l application Raccourcis et touchez le plus en haut à droite.",
+    "pt": "Abra o app Atalhos e toque no mais no canto superior direito.",
+    "tr": "Kısayollar uygulamasını aç ve sağ üstteki artıya dokun."
+  },
+  "ios_s2": {
+    "en": "Tap Add action, search for Get contents of URL and pick it.",
+    "de": "Tippe auf Aktion hinzufügen, such nach Inhalte von URL abrufen und wähl es aus.",
+    "es": "Toca Añadir acción, busca Obtener contenido de URL y selecciónalo.",
+    "fr": "Touchez Ajouter une action, cherchez Obtenir le contenu de l URL et choisissez-la.",
+    "pt": "Toque em Adicionar ação, procure Obter conteúdo do URL e selecione.",
+    "tr": "İşlem ekle'ye dokun, URL içeriğini al'ı ara ve seç."
+  },
+  "ios_s3": {
+    "en": "Paste this address into the action.",
+    "de": "Setz diese Adresse in die Aktion ein.",
+    "es": "Pega esta dirección en la acción.",
+    "fr": "Collez cette adresse dans l action.",
+    "pt": "Cole este endereço na ação.",
+    "tr": "Bu adresi işleme yapıştır."
+  },
+  "ios_s4": {
+    "en": "Tap the arrow behind the address and set Method to POST.",
+    "de": "Tippe auf den Pfeil hinter der Adresse und stell Methode auf POST.",
+    "es": "Toca la flecha detrás de la dirección y pon Método en POST.",
+    "fr": "Touchez la flèche derrière l adresse et réglez Méthode sur POST.",
+    "pt": "Toque na seta atrás do endereço e defina Método como POST.",
+    "tr": "Adresin arkasındaki oka dokun ve Yöntem'i POST yap."
+  },
+  "ios_s5": {
+    "en": "Tap Add new header. The key is X-Token, the value is your access code.",
+    "de": "Tippe auf neue Überschrift hinzufügen. Schlüssel ist X-Token, Wert ist dein Zugangscode.",
+    "es": "Toca Añadir nuevo encabezado. La clave es X-Token, el valor es tu código de acceso.",
+    "fr": "Touchez Ajouter un en-tête. La clé est X-Token, la valeur est votre code.",
+    "pt": "Toque em Adicionar novo cabeçalho. A chave é X-Token, o valor é seu código de acesso.",
+    "tr": "Yeni başlık ekle'ye dokun. Anahtar X-Token, değer erişim kodun."
+  },
+  "ios_s6": {
+    "en": "Set Request Body to File and insert the blue Shortcut Input variable.",
+    "de": "Stell Haupttext anfordern auf Datei und setz die blaue Variable Kurzbefehleingabe ein.",
+    "es": "Pon Cuerpo de la solicitud en Archivo e inserta la variable azul Entrada del atajo.",
+    "fr": "Réglez Corps de la requête sur Fichier et insérez la variable bleue Entrée du raccourci.",
+    "pt": "Defina Corpo da solicitação como Arquivo e insira a variável azul Entrada do atalho.",
+    "tr": "İstek gövdesini Dosya yap ve mavi Kısayol girdisi değişkenini ekle."
+  },
+  "ios_s7": {
+    "en": "Tap the blue Shortcut Input and change its Type to Text.",
+    "de": "Tippe auf die blaue Kurzbefehleingabe und stell die Zeile Typ auf Text.",
+    "es": "Toca la Entrada del atajo azul y cambia su Tipo a Texto.",
+    "fr": "Touchez l Entrée du raccourci bleue et réglez son Type sur Texte.",
+    "pt": "Toque na Entrada do atalho azul e mude o Tipo para Texto.",
+    "tr": "Mavi Kısayol girdisine dokun ve Tür'ü Metin yap."
+  },
+  "ios_s7_why": {
+    "en": "This step decides. With any other type iOS downloads the TikTok page first and sends its content instead of the address.",
+    "de": "Dieser Schritt entscheidet. Bei jedem anderen Typ lädt iOS erst die TikTok-Seite und schickt deren Inhalt statt der Adresse.",
+    "es": "Este paso decide. Con otro tipo, iOS descarga primero la página de TikTok y envía su contenido en lugar de la dirección.",
+    "fr": "Cette étape est décisive. Avec un autre type, iOS télécharge la page TikTok et envoie son contenu au lieu de l adresse.",
+    "pt": "Este passo decide. Com outro tipo, o iOS baixa a página do TikTok e envia o conteúdo em vez do endereço.",
+    "tr": "Bu adım belirleyici. Başka bir türde iOS önce TikTok sayfasını indirir ve adres yerine içeriğini gönderir."
+  },
+  "ios_s8": {
+    "en": "Tap the name at the top, call it Syntracks and turn on Show in Share Sheet. Save.",
+    "de": "Tippe oben auf den Namen, nenn ihn Syntracks und schalte Im Teilen-Menü anzeigen ein. Speichern.",
+    "es": "Toca el nombre arriba, llámalo Syntracks y activa Mostrar en el menú compartir. Guarda.",
+    "fr": "Touchez le nom en haut, appelez-le Syntracks et activez Afficher dans la feuille de partage. Enregistrez.",
+    "pt": "Toque no nome acima, chame de Syntracks e ative Mostrar no menu de compartilhamento. Salve.",
+    "tr": "Yukarıdaki ada dokun, Syntracks olarak adlandır ve Paylaşım menüsünde göster'i aç. Kaydet."
+  },
+  "ios_u1": {
+    "en": "In TikTok tap Share on any video.",
+    "de": "Tippe in TikTok bei einem Video auf Teilen.",
+    "es": "En TikTok toca Compartir en cualquier vídeo.",
+    "fr": "Dans TikTok, touchez Partager sur une vidéo.",
+    "pt": "No TikTok toque em Compartilhar em qualquer vídeo.",
+    "tr": "TikTok'ta bir videoda Paylaş'a dokun."
+  },
+  "ios_u2": {
+    "en": "Swipe the icon row to the right and tap More.",
+    "de": "Wisch die Symbolreihe nach rechts und tippe auf Mehr.",
+    "es": "Desliza la fila de iconos a la derecha y toca Más.",
+    "fr": "Faites glisser la rangée d icônes vers la droite et touchez Plus.",
+    "pt": "Deslize a linha de ícones para a direita e toque em Mais.",
+    "tr": "Simge sırasını sağa kaydır ve Daha fazla'ya dokun."
+  },
+  "ios_u3": {
+    "en": "Tap Syntracks. The song lands in your collection within about half a minute.",
+    "de": "Tippe auf Syntracks. Der Song steht nach etwa einer halben Minute in deiner Sammlung.",
+    "es": "Toca Syntracks. La canción llega a tu colección en aproximadamente medio minuto.",
+    "fr": "Touchez Syntracks. Le titre arrive dans votre collection en une trentaine de secondes.",
+    "pt": "Toque em Syntracks. A música chega à sua coleção em cerca de meio minuto.",
+    "tr": "Syntracks'e dokun. Şarkı yaklaşık yarım dakikada koleksiyonuna düşer."
+  },
+  "ios_help": {
+    "en": "If something goes wrong",
+    "de": "Wenn etwas klemmt",
+    "es": "Si algo falla",
+    "fr": "Si quelque chose coince",
+    "pt": "Se algo der errado",
+    "tr": "Bir şey ters giderse"
+  },
+  "ios_q_missing": {
+    "en": "Syntracks is missing from the share sheet",
+    "de": "Syntracks fehlt im Teilen-Menü",
+    "es": "Syntracks no aparece en el menú de compartir",
+    "fr": "Syntracks n apparaît pas dans le menu de partage",
+    "pt": "O Syntracks não aparece no menu de compartilhamento",
+    "tr": "Syntracks paylaşım menüsünde yok"
+  },
+  "ios_a_missing": {
+    "en": "Scroll to the bottom of the share sheet, tap Edit Actions and move Syntracks up. Since iOS 26 shortcuts have to be pinned once.",
+    "de": "Wisch im Teilen-Menü ganz nach unten, tippe auf Aktionen bearbeiten und schieb Syntracks nach oben. Seit iOS 26 muss man Kurzbefehle einmal anheften.",
+    "es": "Baja hasta el final del menú, toca Editar acciones y sube Syntracks. Desde iOS 26 los atajos hay que fijarlos una vez.",
+    "fr": "Descendez tout en bas du menu, touchez Modifier les actions et remontez Syntracks. Depuis iOS 26 il faut épingler les raccourcis une fois.",
+    "pt": "Vá até o fim do menu, toque em Editar ações e mova o Syntracks para cima. Desde o iOS 26 os atalhos precisam ser fixados uma vez.",
+    "tr": "Paylaşım menüsünde en alta kaydır, İşlemleri düzenle'ye dokun ve Syntracks'i yukarı taşı. iOS 26'dan beri kısayolları bir kez sabitlemek gerekir."
+  },
+  "ios_q_play": {
+    "en": "The play button in the editor shows an error",
+    "de": "Der Play-Knopf im Editor meldet einen Fehler",
+    "es": "El botón de reproducir en el editor da error",
+    "fr": "Le bouton lecture dans l éditeur affiche une erreur",
+    "pt": "O botão de reproduzir no editor mostra um erro",
+    "tr": "Düzenleyicideki oynat düğmesi hata veriyor"
+  },
+  "ios_a_play": {
+    "en": "The editor runs the shortcut without a shared video, so no address arrives. Test with a real video from TikTok.",
+    "de": "Der Editor startet den Kurzbefehl ohne geteiltes Video, deshalb kommt keine Adresse an. Teste mit einem echten Video aus TikTok.",
+    "es": "El editor ejecuta el atajo sin un vídeo compartido, así que no llega ninguna dirección. Prueba con un vídeo real de TikTok.",
+    "fr": "L éditeur lance le raccourci sans vidéo partagée, aucune adresse n arrive donc. Testez avec une vraie vidéo TikTok.",
+    "pt": "O editor executa o atalho sem um vídeo compartilhado, então nenhum endereço chega. Teste com um vídeo real do TikTok.",
+    "tr": "Düzenleyici kısayolu paylaşılan video olmadan çalıştırır, bu yüzden adres gelmez. Gerçek bir TikTok videosuyla dene."
+  },
+  "ios_q_nolink": {
+    "en": "The answer says there is no TikTok link",
+    "de": "Die Antwort sagt, es sei kein TikTok-Link dabei",
+    "es": "La respuesta dice que no hay ningún enlace de TikTok",
+    "fr": "La réponse dit qu il n y a aucun lien TikTok",
+    "pt": "A resposta diz que não há link do TikTok",
+    "tr": "Yanıt TikTok bağlantısı yok diyor"
+  },
+  "ios_a_nolink": {
+    "en": "Go back to step 7 and set the Shortcut Input to Text. With any other type iOS sends the TikTok home page instead of the video address.",
+    "de": "Geh zurück zu Schritt 7 und stell die Kurzbefehleingabe auf Text. Bei jedem anderen Typ schickt iOS die Startseite von TikTok statt der Videoadresse.",
+    "es": "Vuelve al paso 7 y pon la Entrada del atajo en Texto. Con otro tipo, iOS envía la página de inicio de TikTok en lugar de la dirección del vídeo.",
+    "fr": "Revenez à l étape 7 et réglez l Entrée du raccourci sur Texte. Sinon iOS envoie la page d accueil de TikTok au lieu de l adresse de la vidéo.",
+    "pt": "Volte ao passo 7 e defina a Entrada do atalho como Texto. Com outro tipo, o iOS envia a página inicial do TikTok em vez do endereço do vídeo.",
+    "tr": "7. adıma dön ve Kısayol girdisini Metin yap. Başka türde iOS video adresi yerine TikTok ana sayfasını gönderir."
+  },
+  "ios_q_network": {
+    "en": "The shortcut reports a lost network connection",
+    "de": "Der Kurzbefehl meldet eine unterbrochene Netzwerkverbindung",
+    "es": "El atajo informa de una conexión de red interrumpida",
+    "fr": "Le raccourci signale une connexion réseau interrompue",
+    "pt": "O atalho relata conexão de rede interrompida",
+    "tr": "Kısayol ağ bağlantısının koptuğunu bildiriyor"
+  },
+  "ios_a_network": {
+    "en": "Check the header rows and delete every one that is empty or half filled. If that does not help, build the shortcut again. This message almost always comes from a damaged header, not from the server.",
+    "de": "Prüf die Kopfzeilen und lösch jede, die leer oder halb ausgefüllt ist. Hilft das nicht, leg den Kurzbefehl neu an. Diese Meldung stammt fast immer von einer beschädigten Kopfzeile und nicht vom Server.",
+    "es": "Revisa las filas de encabezado y borra las vacías o a medias. Si no ayuda, crea el atajo de nuevo. Este mensaje casi siempre viene de un encabezado dañado, no del servidor.",
+    "fr": "Vérifiez les en-têtes et supprimez ceux qui sont vides ou incomplets. Sinon recréez le raccourci. Ce message vient presque toujours d un en-tête corrompu, pas du serveur.",
+    "pt": "Verifique as linhas de cabeçalho e apague as vazias ou pela metade. Se não resolver, crie o atalho de novo. Essa mensagem quase sempre vem de um cabeçalho danificado, não do servidor.",
+    "tr": "Başlık satırlarını kontrol et ve boş ya da yarım olanları sil. Yardımcı olmazsa kısayolu yeniden oluştur. Bu mesaj neredeyse her zaman bozuk bir başlıktan gelir, sunucudan değil."
+  },
+  "ios_q_auth": {
+    "en": "The answer says you are not signed in",
+    "de": "Die Antwort sagt, du seist nicht angemeldet",
+    "es": "La respuesta dice que no has iniciado sesión",
+    "fr": "La réponse dit que vous n êtes pas connecté",
+    "pt": "A resposta diz que você não está conectado",
+    "tr": "Yanıt giriş yapmadığını söylüyor"
+  },
+  "ios_a_auth": {
+    "en": "Compare the code in step 5 with the one in your shortcut, they have to match exactly. After a password change you need a fresh code.",
+    "de": "Vergleich den Code aus Schritt 5 mit dem in deinem Kurzbefehl, sie müssen zeichengenau übereinstimmen. Nach einem Passwortwechsel brauchst du einen frischen Code.",
+    "es": "Compara el código del paso 5 con el de tu atajo, tienen que coincidir exactamente. Tras cambiar la contraseña necesitas un código nuevo.",
+    "fr": "Comparez le code de l étape 5 avec celui de votre raccourci, ils doivent correspondre exactement. Après un changement de mot de passe, il vous faut un nouveau code.",
+    "pt": "Compare o código do passo 5 com o do seu atalho, precisam ser idênticos. Após trocar a senha você precisa de um código novo.",
+    "tr": "5. adımdaki kodu kısayolundakiyle karşılaştır, tam olarak aynı olmalı. Şifre değişikliğinden sonra yeni bir koda ihtiyacın olur."
+  },
+  "ios_back": {
+    "en": "Back to your collection",
+    "de": "Zurück zur Sammlung",
+    "es": "Volver a tu colección",
+    "fr": "Retour à votre collection",
+    "pt": "Voltar para sua coleção",
+    "tr": "Koleksiyonuna dön"
+  },
+  "copy": {
+    "en": "Copy",
+    "de": "Kopieren",
+    "es": "Copiar",
+    "fr": "Copier",
+    "pt": "Copiar",
+    "tr": "Kopyala"
+  },
+  "copy_done": {
+    "en": "Copied",
+    "de": "Kopiert",
+    "es": "Copiado",
+    "fr": "Copié",
+    "pt": "Copiado",
+    "tr": "Kopyalandı"
+  },
+  "copy_manual": {
+    "en": "Select it by hand",
+    "de": "Markier ihn von Hand",
+    "es": "Selecciónalo a mano",
+    "fr": "Sélectionnez-le à la main",
+    "pt": "Selecione manualmente",
+    "tr": "Elle seç"
+  },
+  "server_unreachable": {
+    "en": "Server not reachable.",
+    "de": "Server nicht erreichbar.",
+    "es": "Servidor no disponible.",
+    "fr": "Serveur injoignable.",
+    "pt": "Servidor inacessível.",
+    "tr": "Sunucuya ulaşılamıyor."
   }
 }

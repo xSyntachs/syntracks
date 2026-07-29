@@ -1,239 +1,260 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Syntracks aufs iPhone</title>
-<link rel="icon" href="/favicon.png" type="image/png">
+<meta name="theme-color" content="#E9E64A">
+<title>Syntracks</title>
+<link rel="icon" href="/favicon.png?v=2" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=64">
+<link rel="stylesheet" href="/styles.css?v=65">
 <script>
-  const savedTheme = localStorage.getItem("theme");
+  const savedTheme = localStorage.getItem("theme") || "dark";
   if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
 </script>
 <style>
   html, body { height: auto; }
-  .wrap { max-width: 620px; margin: 0 auto; padding: 0 0 64px; }
+  .guide { max-width: 660px; margin: 0 auto; padding: 0 0 64px; }
+  .guide-inner { padding: 0 16px; }
   .banner { background: var(--brand); color: #121212; padding: 13px 16px; }
   .banner h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 27px;
                letter-spacing: -.035em; line-height: 1; }
   .banner p { color: #121212; opacity: .82; font-size: 13px; margin-top: 5px; line-height: 1.45; }
-  .inner { padding: 0 16px; }
-  h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; font-weight: 700;
-       letter-spacing: -.02em; margin: 32px 0 12px; }
-  p { color: var(--dim); line-height: 1.6; }
-  ol { line-height: 1.65; padding-left: 0; list-style: none; counter-reset: schritt; margin: 0; }
-  ol li { margin-bottom: 18px; padding-left: 38px; position: relative; }
-  ol li::before {
-    counter-increment: schritt;
-    content: counter(schritt);
-    position: absolute; left: 0; top: 1px;
-    width: 26px; height: 26px; border-radius: 3px;
+  .banner .clock { display: inline-block; margin-top: 9px; background: #121212; color: var(--brand);
+                   font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 3px; }
+
+  .part { margin-top: 34px; }
+  .part-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .part-num { width: 26px; height: 26px; flex: none; border-radius: 3px; background: var(--ink);
+              color: var(--paper); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .part-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; font-weight: 700;
+                  letter-spacing: -.02em; }
+
+  ol.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+  ol.steps > li { position: relative; padding: 0 0 18px 34px; border-left: 2px solid var(--line);
+                  margin-left: 12px; line-height: 1.55; }
+  ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps > li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: -13px; top: -2px;
+    width: 24px; height: 24px; border-radius: 3px;
     display: grid; place-items: center;
-    background: var(--brand); color: #121212;
-    font-size: 12px; font-weight: 700;
+    background: var(--brand); color: #121212; font-size: 11px; font-weight: 700;
   }
-  code {
-    border: 2px solid var(--line);
-    padding: 3px 7px; border-radius: 3px;
-    font-family: ui-monospace, monospace; font-size: 13px;
-    white-space: nowrap; display: inline-block;
-  }
-  code.lang { white-space: normal; overflow-wrap: anywhere; display: block; }
-  .code-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  ol.steps .why { display: block; margin-top: 7px; font-size: 12.5px; color: var(--dim);
+                  border-left: 3px solid var(--brand); padding-left: 10px; }
+
+  code { border: 2px solid var(--line); padding: 3px 7px; border-radius: 3px;
+         font-family: ui-monospace, monospace; font-size: 13px; white-space: nowrap; display: inline-block; }
+  code.block { white-space: normal; overflow-wrap: anywhere; display: block; }
+  .code-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
   .code-row code { flex: 1; min-width: 170px; }
-  .mini-copy {
-    border: none; background: var(--btn-bg); color: var(--btn-ink);
-    border-radius: var(--r); padding: 10px 16px; min-height: 44px;
-    font-size: 13px; font-weight: 700; cursor: pointer;
-    white-space: nowrap; flex: none;
-  }
-  .mini-copy[disabled] { background: var(--line); color: var(--dim); cursor: default; }
-  .box { border: 2px solid var(--line); border-radius: var(--r); padding: 14px 16px; margin: 16px 0; }
-  .box input { margin-bottom: 8px; }
-  .step { font-weight: 700; color: var(--ink); }
-  dl { margin: 0; }
-  dt { font-weight: 700; margin-top: 18px; }
-  dd { margin: 4px 0 0; color: var(--dim); line-height: 1.6; }
-  #angemeldet { display: none; }
+  .mini-copy { border: none; background: var(--btn-bg); color: var(--btn-ink); border-radius: var(--r);
+               padding: 10px 16px; min-height: 44px; font-size: 13px; font-weight: 700;
+               cursor: pointer; white-space: nowrap; flex: none; }
+
+  figure { margin: 12px 0 0; }
+  figure svg { width: 100%; max-width: 260px; height: auto; display: block;
+               border: 2px solid var(--line); border-radius: var(--r); }
+
+  details { border: 2px solid var(--line); border-radius: var(--r); margin-bottom: 8px; }
+  details summary { cursor: pointer; padding: 13px 14px; font-weight: 600; font-size: 14px;
+                    list-style: none; display: flex; align-items: center; gap: 10px; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "+"; color: var(--brand); font-weight: 700; flex: none; }
+  details[open] summary::before { content: "\2212"; }
+  details p { padding: 0 14px 13px 34px; color: var(--dim); font-size: 13.5px; line-height: 1.6; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="guide">
   <div class="banner">
-    <h1>Syntracks aufs iPhone</h1>
-    <p>Am Ende steht Syntracks im Teilen-Men&uuml; von TikTok. Du tippst auf Teilen, w&auml;hlst Syntracks,
-       und der Song landet in deiner Sammlung. Dauert zwei Minuten und kostet nichts.</p>
+    <h1 data-i18n="ios_title">Syntracks on your iPhone</h1>
+    <p data-i18n="ios_intro"></p>
+    <span class="clock" data-i18n="ios_time"></span>
   </div>
 
-  <div class="inner">
-  <h2>Kurzbefehl anlegen</h2>
-  <ol>
-    <li>&Ouml;ffne die App <span class="step">Kurzbefehle</span>.</li>
+  <div class="guide-inner">
 
-    <li>Tippe oben rechts auf <span class="step">+</span>.</li>
-
-    <li>Tippe auf <span class="step">Aktion hinzuf&uuml;gen</span>, such nach
-        <span class="step">Inhalte von URL abrufen</span> und w&auml;hl die Aktion aus.</li>
-
-    <li>Setz als Adresse ein:
+    <section class="part">
+      <div class="part-head"><span class="part-num">1</span><h2 data-i18n="ios_part_one"></h2></div>
+      <p data-i18n="ios_code_intro"></p>
       <div class="code-row">
-        <code class="lang" id="ziel-adresse">https://syntracks.xsyntachs.de/add</code>
-        <button class="mini-copy" data-quelle="ziel-adresse">Kopieren</button>
+        <code class="block" id="token" data-i18n="ios_not_signed"></code>
+        <button class="mini-copy" id="copy-token" data-source="token"></button>
       </div>
-    </li>
+    </section>
 
-    <li>Tippe auf den Pfeil <span class="step">&#9662;</span> hinter der Adresse und stell
-        <span class="step">Methode</span> auf <span class="step">POST</span>.</li>
+    <section class="part">
+      <div class="part-head"><span class="part-num">2</span><h2 data-i18n="ios_part_two"></h2></div>
+      <ol class="steps">
+        <li data-i18n="ios_s1"></li>
+        <li data-i18n="ios_s2"></li>
+        <li>
+          <span data-i18n="ios_s3"></span>
+          <div class="code-row">
+            <code class="block" id="target-url">https://syntracks.app/add</code>
+            <button class="mini-copy" data-source="target-url"></button>
+          </div>
+        </li>
+        <li data-i18n="ios_s4"></li>
+        <li><span data-i18n="ios_s5"></span> <code>X-Token</code></li>
+        <li data-i18n="ios_s6"></li>
+        <li>
+          <span data-i18n="ios_s7"></span>
+          <span class="why" data-i18n="ios_s7_why"></span>
+          <figure>
+            <svg viewBox="0 0 240 150" aria-hidden="true">
+              <rect width="240" height="150" fill="var(--row)"/>
+              <rect x="14" y="16" width="212" height="30" rx="3" fill="none" stroke="var(--row-dim)" stroke-width="1.5"/>
+              <text x="26" y="35" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-ink)">Shortcut Input</text>
+              <rect x="14" y="58" width="212" height="30" rx="3" fill="none" stroke="var(--brand)" stroke-width="2.5"/>
+              <text x="26" y="77" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-ink)">Type</text>
+              <text x="150" y="77" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="700" fill="var(--brand)">Text</text>
+              <path d="M196 68l6 5-6 5" fill="none" stroke="var(--brand)" stroke-width="2"/>
+              <rect x="14" y="100" width="212" height="30" rx="3" fill="none" stroke="var(--row-dim)" stroke-width="1.5"/>
+              <text x="26" y="119" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-dim)">Name</text>
+            </svg>
+          </figure>
+        </li>
+        <li data-i18n="ios_s8"></li>
+      </ol>
+    </section>
 
-    <li>Tippe auf <span class="step">neue &Uuml;berschrift hinzuf&uuml;gen</span>. Schreib als Schl&uuml;ssel
-        <code>X-Token</code> und setz als Wert deinen Zugangscode ein:
-      <div class="code-row">
-        <code class="lang" id="token">Noch nicht angemeldet</code>
-        <button class="mini-copy" id="copy-token" data-quelle="token">Anmelden</button>
-      </div>
-    </li>
+    <section class="part">
+      <div class="part-head"><span class="part-num">3</span><h2 data-i18n="ios_part_three"></h2></div>
+      <ol class="steps">
+        <li data-i18n="ios_u1"></li>
+        <li data-i18n="ios_u2"></li>
+        <li data-i18n="ios_u3"></li>
+      </ol>
+    </section>
 
-    <li>Stell <span class="step">Haupttext anfordern</span> auf <span class="step">Datei</span> und
-        setz als Inhalt die blaue Variable <span class="step">Kurzbefehleingabe</span> ein.</li>
+    <section class="part">
+      <div class="part-head"><span class="part-num">?</span><h2 data-i18n="ios_help"></h2></div>
+      <details><summary data-i18n="ios_q_missing"></summary><p data-i18n="ios_a_missing"></p></details>
+      <details><summary data-i18n="ios_q_nolink"></summary><p data-i18n="ios_a_nolink"></p></details>
+      <details><summary data-i18n="ios_q_auth"></summary><p data-i18n="ios_a_auth"></p></details>
+      <details><summary data-i18n="ios_q_network"></summary><p data-i18n="ios_a_network"></p></details>
+      <details><summary data-i18n="ios_q_play"></summary><p data-i18n="ios_a_play"></p></details>
+    </section>
 
-    <li>Tippe auf die blaue <span class="step">Kurzbefehleingabe</span> und stell in der Zeile
-        <span class="step">Typ</span> den Wert auf <span class="step">Text</span>.
-        <p style="margin:8px 0 0;font-size:13px">Dieser Schritt entscheidet. Bei jedem anderen Typ
-           l&auml;dt iOS erst die TikTok-Seite herunter und schickt deren Inhalt statt der Adresse.</p></li>
-
-    <li>Tippe oben auf den Namen, nenn den Kurzbefehl <span class="step">Syntracks</span> und schalte
-        <span class="step">Im Teilen-Men&uuml; anzeigen</span> ein. Speichern.</li>
-  </ol>
-
-  <h2>Song speichern</h2>
-  <ol>
-    <li>Tippe in TikTok auf <span class="step">Teilen</span>.</li>
-    <li>Wisch in der Symbolreihe nach rechts und tippe auf <span class="step">Mehr</span>.</li>
-    <li>Tippe auf <span class="step">Syntracks</span>. Die Erkennung l&auml;uft danach auf dem Server,
-        nach einer halben Minute steht der Song in deiner Sammlung.</li>
-  </ol>
-
-  <h2>Wenn etwas klemmt</h2>
-  <dl>
-    <dt>Syntracks fehlt im Teilen-Men&uuml;</dt>
-    <dd>Wisch im Teilen-Men&uuml; ganz nach unten, tippe auf <span class="step">Aktionen bearbeiten</span>
-        und schieb Syntracks nach oben. Seit iOS 26 muss man Kurzbefehle einmal anheften.</dd>
-
-    <dt>Der Play-Knopf im Editor meldet einen Fehler</dt>
-    <dd>Der Editor startet den Kurzbefehl ohne geteiltes Video, deshalb kommt dort keine Adresse an.
-        Teste mit einem echten Video aus TikTok.</dd>
-
-    <dt>Die Antwort lautet "Kein TikTok-Link im geteilten Text"</dt>
-    <dd>Geh zur&uuml;ck zu Schritt 8. Tippe auf die blaue <span class="step">Kurzbefehleingabe</span>
-        und stell die Auswahl auf <span class="step">Text</span>. Steht dort etwas anderes,
-        schickt iOS die Startseite von TikTok statt der Videoadresse.</dd>
-
-    <dt>Der Kurzbefehl meldet "Die Netzwerkverbindung wurde unterbrochen"</dt>
-    <dd>Pr&uuml;f zuerst die Zeilen unter <span class="step">&Uuml;berschrift</span> und l&ouml;sch jede, die leer
-        ist oder nur halb ausgef&uuml;llt aussieht. Hilft das nicht, leg den Kurzbefehl neu an. Diese
-        Meldung stammt fast immer von einer besch&auml;digten Kopfzeile, die im Editor unauff&auml;llig
-        aussieht, und nicht vom Server.</dd>
-
-    <dt>Die Antwort lautet "Nicht angemeldet"</dt>
-    <dd>Vergleich den Code in Schritt 6 mit dem in deinem Kurzbefehl. Sie m&uuml;ssen zeichengenau
-        &uuml;bereinstimmen. Nach einem Passwortwechsel brauchst du einen frischen Code, sonst bleibt
-        er dauerhaft g&uuml;ltig.</dd>
-  </dl>
-
-  <p style="margin-top:34px"><a href="/" style="color:var(--ink);font-weight:600">Zur&uuml;ck zur Sammlung</a></p>
+    <p style="margin-top:30px">
+      <a href="/" style="color:var(--ink);font-weight:600" data-i18n="ios_back"></a>
+    </p>
   </div>
 </div>
 
+<div id="overlays"></div>
 <script>
 const $ = (id) => document.getElementById(id);
-let hatToken = false;
+const LANGS = { en: 1, de: 1, es: 1, fr: 1, pt: 1, tr: 1 };
+let LANG = localStorage.getItem("lang") || (navigator.language || "en").slice(0, 2).toLowerCase();
+if (!LANGS[LANG]) LANG = "en";
+let I18N = {};
+let hasToken = false;
+
+const T = (key) => (I18N[key] && (I18N[key][LANG] || I18N[key].en)) || key;
+
+function applyText() {
+  document.documentElement.lang = LANG;
+  document.title = T("ios_title");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    if (el.id === "token" && hasToken) return;
+    el.textContent = T(el.dataset.i18n);
+  });
+  document.querySelectorAll(".mini-copy").forEach(b => {
+    b.textContent = b.id === "copy-token" && !hasToken ? T("sign_in") : T("copy");
+  });
+}
+
+function showToken(value) {
+  localStorage.setItem("token", value);
+  hasToken = true;
+  $("token").textContent = value;
+  $("copy-token").textContent = T("copy");
+}
 
 function loginDialog() {
   const overlay = document.createElement("div");
   overlay.className = "overlay";
   overlay.innerHTML = `<div class="modal">
-    <header><b>Bei Syntracks anmelden</b>
-      <button class="icon-btn bare close" aria-label="Zumachen">
+    <header><b>${T("sign_in")}</b>
+      <button class="icon-btn bare close" aria-label="${T("sign_in")}">
         <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
     <div class="body">
-      <p style="margin-bottom:4px">Danach steht dein Zugangscode direkt hier in Schritt 6.</p>
-      <input type="text" id="dlg-user" placeholder="Benutzername" autocomplete="username">
-      <input type="password" id="dlg-pass" placeholder="Passwort" autocomplete="current-password">
+      <input type="text" id="dlg-user" autocomplete="off" spellcheck="false">
+      <input type="password" id="dlg-pass" autocomplete="off">
       <div class="err" id="dlg-err" role="alert"></div>
-      <button class="btn-primary" id="dlg-go">Anmelden</button>
+      <button class="btn-primary" id="dlg-go">${T("sign_in")}</button>
     </div></div>`;
   document.body.appendChild(overlay);
-  const zumachen = () => overlay.remove();
-  overlay.querySelector(".close").onclick = zumachen;
-  overlay.onclick = (e) => { if (e.target === overlay) zumachen(); };
+  $("dlg-user").placeholder = T("username");
+  $("dlg-pass").placeholder = T("password");
+  const close = () => overlay.remove();
+  overlay.querySelector(".close").onclick = close;
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
-  async function absenden() {
+  async function submit() {
     $("dlg-err").textContent = "";
     try {
-      const antwort = await fetch("/login", {
+      const response = await fetch("/login", {
         method: "POST",
+        headers: { "Accept-Language": LANG },
         body: JSON.stringify({ user: $("dlg-user").value.trim().toLowerCase(), pass: $("dlg-pass").value }),
       });
-      const text = (await antwort.text()).trim();
-      if (!antwort.ok) {
-        $("dlg-err").textContent = text.startsWith("<") || text.length > 200
-          ? `Der Server hat nicht sauber geantwortet (${antwort.status})` : text;
+      const body = (await response.text()).trim();
+      if (!response.ok) {
+        $("dlg-err").textContent = body.startsWith("<") || body.length > 200
+          ? `${T("server_error")} (${response.status})` : body;
         return;
       }
-      const daten = JSON.parse(text);
-      zeigeToken(daten.token, daten.user);
-      zumachen();
+      showToken(JSON.parse(body).token);
+      close();
     } catch {
-      $("dlg-err").textContent = "Server nicht erreichbar.";
+      $("dlg-err").textContent = T("server_unreachable");
     }
   }
-  $("dlg-go").onclick = absenden;
-  $("dlg-pass").onkeydown = (e) => { if (e.key === "Enter") absenden(); };
+  $("dlg-go").onclick = submit;
+  $("dlg-pass").onkeydown = (e) => { if (e.key === "Enter") submit(); };
   $("dlg-user").focus();
 }
 
-function zeigeToken(token, name) {
-  localStorage.setItem("token", token);
-  if (name) localStorage.setItem("user", name);
-  hatToken = true;
-  $("token").textContent = token;
-  $("copy-token").textContent = "Kopieren";
-}
-
-async function kopieren(knopf, text) {
-  const beschriftung = knopf.dataset.label || knopf.textContent;
-  knopf.dataset.label = beschriftung;
-  let geklappt = false;
+async function copyText(button, text) {
+  let done = false;
   try {
     await navigator.clipboard.writeText(text);
-    geklappt = true;
+    done = true;
   } catch {
-    const hilfsfeld = document.createElement("textarea");
-    hilfsfeld.value = text;
-    hilfsfeld.style.cssText = "position:fixed;opacity:0";
-    document.body.appendChild(hilfsfeld);
-    hilfsfeld.select();
-    geklappt = document.execCommand("copy");
-    hilfsfeld.remove();
+    const helper = document.createElement("textarea");
+    helper.value = text;
+    helper.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(helper);
+    helper.select();
+    done = document.execCommand("copy");
+    helper.remove();
   }
-  knopf.textContent = geklappt ? "Kopiert" : "Markier ihn von Hand";
-  setTimeout(() => (knopf.textContent = beschriftung), 2000);
+  button.textContent = done ? T("copy_done") : T("copy_manual");
+  setTimeout(() => (button.textContent = T("copy")), 2000);
 }
 
-for (const knopf of document.querySelectorAll(".mini-copy")) {
-  const feld = $(knopf.dataset.quelle);
-  knopf.onclick = () => {
-    if (knopf.id === "copy-token" && !hatToken) { loginDialog(); return; }
-    kopieren(knopf, feld.textContent);
-  };
-  feld.onclick = () => getSelection().selectAllChildren(feld);
-}
-
-const gespeichert = localStorage.getItem("token");
-if (gespeichert) zeigeToken(gespeichert);
+(async function boot() {
+  try { I18N = await (await fetch("/i18n.json")).json(); } catch { I18N = {}; }
+  $("target-url").textContent = `${location.origin}/add`;
+  const stored = localStorage.getItem("token");
+  if (stored) { hasToken = true; $("token").textContent = stored; }
+  applyText();
+  for (const button of document.querySelectorAll(".mini-copy")) {
+    const source = $(button.dataset.source);
+    button.onclick = () => {
+      if (button.id === "copy-token" && !hasToken) { loginDialog(); return; }
+      copyText(button, source.textContent);
+    };
+    source.onclick = () => getSelection().selectAllChildren(source);
+  }
+})();
 </script>
 </body>
 </html>
