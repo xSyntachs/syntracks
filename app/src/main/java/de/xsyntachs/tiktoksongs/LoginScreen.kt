@@ -41,7 +41,6 @@ fun LoginScreen(onSuccess: () -> Unit) {
     var register by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var invite by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -87,19 +86,10 @@ fun LoginScreen(onSuccess: () -> Unit) {
                 colors = fieldColors,
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             )
-            if (register) OutlinedTextField(
-                value = invite,
-                onValueChange = { invite = it.trim(); error = null },
-                label = { Text("Einladungs-Key") },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = fieldColors,
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            )
             error?.let {
                 Text(it, color = Pink, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
             }
-            val ready = !busy && name.isNotBlank() && password.isNotBlank() && (!register || invite.isNotBlank())
+            val ready = !busy && name.isNotBlank() && password.isNotBlank()
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,7 +106,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                         scope.launch {
                             val result = withContext(Dispatchers.IO) {
                                 runCatching {
-                                    if (register) Api.register(context, name, password, invite)
+                                    if (register) Api.register(context, name, password)
                                     else Api.login(context, name, password)
                                 }
                             }

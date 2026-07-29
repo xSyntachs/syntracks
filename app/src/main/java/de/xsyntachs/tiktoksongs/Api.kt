@@ -6,7 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object Api {
-    private const val BASE = "https://syntracks.xsyntachs.de"
+    private const val BASE = "https://syntracks.app"
     private var token: String? = null
     var user: String? = null
         private set
@@ -33,12 +33,12 @@ object Api {
     }
 
     /** wirft bei falschen Daten mit der Server-Meldung als message */
-    fun register(context: Context, name: String, password: String, invite: String) =
-        auth(context, "/register", name, password, invite)
+    fun register(context: Context, name: String, password: String) =
+        auth(context, "/register", name, password)
     fun login(context: Context, name: String, password: String) = auth(context, "/login", name, password)
 
-    private fun auth(context: Context, path: String, name: String, password: String, invite: String = "") {
-        val body = JSONObject().put("user", name).put("pass", password).put("invite", invite).toString()
+    private fun auth(context: Context, path: String, name: String, password: String) {
+        val body = JSONObject().put("user", name).put("pass", password).toString()
         val answer = JSONObject(request("POST", path, body, withToken = false))
         token = answer.getString("token")
         user = answer.getString("user")
@@ -78,9 +78,6 @@ object Api {
         request("POST", "/admin/reset-password", JSONObject().put("user", name).put("new", new).toString())
     fun adminUserSongs(name: String) = request("GET", "/admin/user-songs?user=$name")
     fun adminUserRecommendations(name: String) = request("GET", "/admin/user-recommendations?user=$name")
-    fun adminInvites() = request("GET", "/admin/invites")
-    fun adminCreateInvite() = request("POST", "/admin/create-invite")
-    fun adminDeleteInvite(key: String) = request("POST", "/admin/delete-invite", key)
 
     private fun request(method: String, path: String, body: String? = null, withToken: Boolean = true): String {
         val conn = URL(BASE + path).openConnection() as HttpURLConnection

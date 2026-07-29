@@ -1146,20 +1146,11 @@ private fun PasswordDialog(onClose: () -> Unit) {
 @Composable
 private fun AdminOverlay(onClose: () -> Unit) {
     var users by remember { mutableStateOf<List<Triple<String, Boolean, Int>>?>(null) }
-    var invites by remember { mutableStateOf<List<String>>(emptyList()) }
     var reload by remember { mutableIntStateOf(0) }
     var resetFor by remember { mutableStateOf<String?>(null) }
     var viewFor by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    fun copyInviteLink(key: String) {
-        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-            as android.content.ClipboardManager
-        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
-            "Einladung", "https://syntracks.xsyntachs.de/?invite=$key"))
-        android.widget.Toast.makeText(context, "Einladungslink kopiert", android.widget.Toast.LENGTH_SHORT).show()
-    }
 
     LaunchedEffect(reload) {
         users = runCatching {
@@ -1169,12 +1160,6 @@ private fun AdminOverlay(onClose: () -> Unit) {
                     val u = arr.getJSONObject(it)
                     Triple(u.getString("name"), u.optBoolean("admin"), u.optInt("songs"))
                 }
-            }
-        }.getOrDefault(emptyList())
-        invites = runCatching {
-            withContext(Dispatchers.IO) {
-                val arr = JSONObject(Api.adminInvites()).getJSONArray("invites")
-                (0 until arr.length()).map { arr.getString(it) }
             }
         }.getOrDefault(emptyList())
     }
@@ -1232,39 +1217,6 @@ private fun AdminOverlay(onClose: () -> Unit) {
                                     reload++
                                 }
                             }
-                        }
-                    }
-                }
-                item {
-                    Text("Einladungen (jeder Key gilt für ein Konto)",
-                        fontSize = 12.sp, color = Scheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 14.dp, bottom = 2.dp))
-                }
-                items(invites, key = { "inv:$it" }) { inviteKey ->
-                    AdminRow(
-                        avatar = { Text("♪", fontWeight = FontWeight.Bold, color = Color.White) },
-                        avatarBrush = Brush.linearGradient(listOf(Color(0xFF0E7490), Violet)),
-                        title = inviteKey,
-                        titleColor = Scheme.onSurface,
-                        subtitle = "Noch nicht eingelöst",
-                    ) {
-                        ActionPill("Link", Cyan) { copyInviteLink(inviteKey) }
-                        ActionPill("Löschen", Pink) {
-                            scope.launch {
-                                runCatching { withContext(Dispatchers.IO) { Api.adminDeleteInvite(inviteKey) } }
-                                reload++
-                            }
-                        }
-                    }
-                }
-                item {
-                    DialogButton("Einladungs-Key erstellen") {
-                        scope.launch {
-                            val created = withContext(Dispatchers.IO) {
-                                runCatching { JSONObject(Api.adminCreateInvite()).getString("key") }
-                            }
-                            created.onSuccess { copyInviteLink(it) }
-                            reload++
                         }
                     }
                 }
@@ -1472,10 +1424,17 @@ private fun GlassBox(content: @Composable () -> Unit) {
 }
 
 private val STAGE_PROGRESS = mapOf(
-    "Wartet" to 0.1f,
-    "Video wird geladen" to 0.4f,
-    "Song wird erkannt" to 0.75f,
-    "Wird gespeichert" to 0.95f,
+    "waiting" to 0.1f,
+    "loading_video" to 0.4f,
+    "identifying" to 0.75f,
+    "saving" to 0.95f,
+)
+
+private val STAGE_LABEL = mapOf(
+    "waiting" to "Wartet",
+    "loading_video" to "Video wird geladen",
+    "identifying" to "Song wird erkannt",
+    "saving" to "Wird gespeichert",
 )
 
 @Composable
@@ -1496,8 +1455,8 @@ private fun PendingCard(count: Int, stage: String?) {
                         color = Cyan,
                         fontWeight = FontWeight.Medium,
                     )
-                    stage?.let {
-                        Text(it, fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+                    stage?.let { key ->
+                        Text(STAGE_LABEL[key] ?: key, fontSize = 12.sp, color = Scheme.onSurfaceVariant)
                     }
                 }
             }
