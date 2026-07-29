@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -107,6 +108,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -215,22 +217,28 @@ private fun thisWeek(songs: List<Song>): Int {
 private fun topArtist(songs: List<Song>): String? =
     songs.groupingBy { it.artist }.eachCount().maxByOrNull { it.value }?.key
 
-val Pink = Color(0xFFFE2C55)
-val Cyan = Color(0xFF25F4EE)
-private val Violet = Color(0xFF7828C8)
-private val Gold = Color(0xFFF5C542)
+val Brand = Color(0xFFE9E64A)
+val Ink = Color(0xFF121212)
+val RowSurface = Color(0xFF1E1E1B)
+val Line = Color(0xFF2A2A26)
+val Danger = Color(0xFFF0705F)
+
+val Pink = Danger
+val Cyan = Brand
+private val Violet = Brand
+private val Gold = Brand
 
 val Scheme = darkColorScheme(
-    primary = Pink,
-    secondary = Cyan,
-    background = Color.Black,
-    surface = Color(0xFF15151B),
-    onBackground = Color(0xFFF4F4F8),
-    onSurface = Color(0xFFF4F4F8),
-    onSurfaceVariant = Color(0xFF9C9CA8),
+    primary = Brand,
+    secondary = Brand,
+    background = Ink,
+    surface = RowSurface,
+    onBackground = Color(0xFFF5F3E7),
+    onSurface = Color(0xFFF5F3E7),
+    onSurfaceVariant = Color(0xFF9B9890),
 )
 
-private val GlassCard = Color.White.copy(alpha = 0.08f)
+private val GlassCard = RowSurface
 
 /** Lädt die aktuelle APK vom Server und öffnet den System-Installer (gleiche Signatur = Update) */
 private fun downloadUpdate(context: Context) {
@@ -450,35 +458,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AuroraBackground(content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
-    val transition = rememberInfiniteTransition(label = "orbs")
-    val drift by transition.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(26_000, easing = LinearEasing), RepeatMode.Reverse),
-        label = "drift",
-    )
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .drawBehind {
-                listOf(
-                    Triple(Violet.copy(alpha = 0.32f),
-                        Offset(size.width * (0.15f + drift * 0.25f), size.height * (0.05f + drift * 0.08f)),
-                        size.width * 0.9f),
-                    Triple(Pink.copy(alpha = 0.22f),
-                        Offset(size.width * (0.95f - drift * 0.2f), size.height * (0.3f + drift * 0.12f)),
-                        size.width * 0.8f),
-                    Triple(Color(0xFF2564F4).copy(alpha = 0.20f),
-                        Offset(size.width * (0.4f + drift * 0.2f), size.height * (0.95f - drift * 0.1f)),
-                        size.width * 0.9f),
-                ).forEach { (color, center, radius) ->
-                    drawCircle(
-                        Brush.radialGradient(listOf(color, Color.Transparent), center = center, radius = radius),
-                        center = center, radius = radius,
-                    )
-                }
-            }
-    ) { content() }
+    Box(Modifier.fillMaxSize().background(Ink)) { content() }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -615,23 +595,32 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     AuroraBackground {
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp)) {
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Syntracks", fontSize = 30.sp, fontWeight = FontWeight.Black,
-                        color = Scheme.onBackground)
-                    Api.user?.let { Text("@$it", fontSize = 12.sp, color = Scheme.onSurfaceVariant) }
-                }
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brand)
+                    .statusBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
+            ) {
+                Text("Syntracks", fontSize = 27.sp, fontWeight = FontWeight.Black,
+                    color = Ink, modifier = Modifier.weight(1f))
                 IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search, "Suche", tint = Scheme.onSurfaceVariant)
+                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search, "Suche", tint = Ink)
                 }
                 Box {
                     var accountMenu by remember { mutableStateOf(false) }
                     IconButton(onClick = { accountMenu = true }) {
-                        Icon(Icons.Default.AccountCircle, "Konto", tint = Scheme.onSurfaceVariant)
+                        Icon(Icons.Default.AccountCircle, "Konto", tint = Ink)
                     }
                     DropdownMenu(expanded = accountMenu, onDismissRequest = { accountMenu = false }) {
+                        Text(
+                            "@${Api.user ?: ""} · ${feed?.songs?.size ?: 0} Songs",
+                            fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            color = Scheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 15.dp, vertical = 8.dp),
+                        )
                         DropdownMenuItem(
                             text = { Text("Name ändern") },
                             onClick = { accountMenu = false; dialog = "rename" },
@@ -665,16 +654,20 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            ) {
                 Box(
                     Modifier
                         .clip(RoundedCornerShape(99.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF0E7490), Violet)))
+                        .background(SolidColor(Brand))
                         .clickable { showStats = true }
                         .padding(horizontal = 16.dp, vertical = 9.dp),
                 ) {
-                    Text("Dein Geschmack", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Dein Geschmack", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ink)
                 }
                 if (view == "SONGS") {
                     Box {
@@ -702,7 +695,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                             color = if (view == key) Scheme.onBackground else Scheme.onSurfaceVariant)
                         Spacer(Modifier.height(5.dp))
                         Box(Modifier.height(2.dp).width(28.dp)
-                            .background(if (view == key) Pink else Color.Transparent, RoundedCornerShape(1.dp)))
+                            .background(if (view == key) Brand else Color.Transparent, RoundedCornerShape(1.dp)))
                     }
                 }
             }
@@ -710,9 +703,9 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Brush.horizontalGradient(listOf(Pink.copy(alpha = .22f), Violet.copy(alpha = .22f))))
-                        .border(1.dp, Color.White.copy(alpha = .14f), RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(SolidColor(RowSurface))
+                        .border(1.dp, Color.White.copy(alpha = .14f), RoundedCornerShape(5.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -739,22 +732,15 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     placeholder = { Text("Song oder Artist suchen…") },
                     singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(5.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Cyan,
                         unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
                     ),
                 )
             }
-            Spacer(Modifier.height(12.dp))
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
-                    .background(Color.Black.copy(alpha = 0.28f)),
-            ) {
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp)) {
                 SongList(
                     clipboardSuggestion = clipboardSuggestion,
                     onClipboardHandled = { save -> onClipboardHandled(save); if (save) tick++ },
@@ -952,7 +938,7 @@ private fun OverlayFrame(title: String, onClose: () -> Unit, content: @Composabl
         Card(
             modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(16.dp)
                 .clickable(enabled = false) {},
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(5.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF17171E), contentColor = Scheme.onSurface),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
         ) {
@@ -1033,7 +1019,7 @@ private fun SimilarRow(track: SimilarTrack, playing: Boolean?, alreadySaved: Boo
     val cover = rememberCover(track.artwork)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(11.dp))
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(5.dp))
                 .background(Cyan.copy(alpha = 0.15f)).clickable(onClick = onPlay),
             contentAlignment = Alignment.Center,
         ) {
@@ -1069,7 +1055,7 @@ private fun DialogField(value: String, onChange: (String) -> Unit, label: String
         singleLine = true,
         visualTransformation = if (password) androidx.compose.ui.text.input.PasswordVisualTransformation()
         else androidx.compose.ui.text.input.VisualTransformation.None,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(5.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Cyan,
             unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
@@ -1082,8 +1068,8 @@ private fun DialogField(value: String, onChange: (String) -> Unit, label: String
 private fun DialogButton(label: String, onClick: () -> Unit) {
     Box(
         Modifier.fillMaxWidth().padding(top = 14.dp).height(46.dp)
-            .clip(RoundedCornerShape(23.dp))
-            .background(Brush.horizontalGradient(listOf(Pink, Cyan)))
+            .clip(RoundedCornerShape(5.dp))
+            .background(SolidColor(Brand))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -1203,7 +1189,7 @@ private fun AdminOverlay(onClose: () -> Unit) {
                 items(list, key = { it.first }) { (name, admin, count) ->
                     AdminRow(
                         avatar = { Text(name.first().uppercase(), fontWeight = FontWeight.Bold, color = Color.White) },
-                        avatarBrush = Brush.linearGradient(listOf(Pink, Violet)),
+                        avatarBrush = SolidColor(Brand),
                         title = if (admin) "@$name · Admin" else "@$name",
                         titleColor = if (admin) Cyan else Scheme.onSurface,
                         subtitle = "$count Songs",
@@ -1236,7 +1222,7 @@ private fun AdminRow(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(5.dp))
             .background(Color.White.copy(alpha = 0.05f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
@@ -1316,7 +1302,7 @@ private fun UserLibraryOverlay(user: String, onClose: () -> Unit) {
 private fun LibraryRow(artwork: String?, name: String, artist: String, badge: String?, favorite: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val cover = rememberCover(artwork)
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.07f))) {
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.07f))) {
             cover?.let { Image(it.asImageBitmap(), "Cover", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         }
         Spacer(Modifier.width(10.dp))
@@ -1368,7 +1354,7 @@ private fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
                             .background(Color.White.copy(alpha = 0.08f))) {
                             Box(Modifier.fillMaxWidth(count.toFloat() / max).height(6.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(Brush.horizontalGradient(listOf(Pink, Violet))))
+                                .background(SolidColor(Brand)))
                         }
                     }
                 }
@@ -1395,7 +1381,7 @@ private fun SourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
         colors = FilterChipDefaults.filterChipColors(
             containerColor = GlassCard,
             labelColor = Scheme.onSurfaceVariant,
-            selectedContainerColor = Pink.copy(alpha = 0.35f),
+            selectedContainerColor = Brand,
             selectedLabelColor = Color.White,
         ),
         border = BorderStroke(1.dp, Color.White.copy(alpha = if (selected) 0.3f else 0.12f)),
@@ -1417,9 +1403,8 @@ private fun StatChip(text: String) {
 private fun GlassBox(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = GlassCard, contentColor = Scheme.onSurface),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(5.dp),
+        colors = CardDefaults.cardColors(containerColor = RowSurface, contentColor = Scheme.onSurface),
     ) { content() }
 }
 
@@ -1522,7 +1507,7 @@ private fun CoverButton(song: Song, buffering: Boolean?, accent: Color, onPlay: 
     Box(
         modifier = Modifier
             .size(52.dp)
-            .clip(RoundedCornerShape(13.dp))
+            .clip(RoundedCornerShape(5.dp))
             .background(accent.copy(alpha = 0.2f))
             .clickable(onClick = onPlay),
         contentAlignment = Alignment.Center,
@@ -1554,7 +1539,7 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
         Song.Source.CAPTION -> Gold
         Song.Source.SIMILAR -> Color(0xFF4CD964)
         Song.Source.ORIGINAL -> Scheme.onSurfaceVariant
-        Song.Source.TIKTOK -> Pink
+        Song.Source.TIKTOK -> Brand
     }
 
     GlassBox {

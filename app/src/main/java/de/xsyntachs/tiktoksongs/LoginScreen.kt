@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -71,7 +72,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                 onValueChange = { name = it.trim(); error = null },
                 label = { Text("Benutzername") },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(5.dp),
                 colors = fieldColors,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -82,7 +83,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions.Default,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(5.dp),
                 colors = fieldColors,
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             )
@@ -95,10 +96,10 @@ fun LoginScreen(onSuccess: () -> Unit) {
                     .fillMaxWidth()
                     .padding(top = 20.dp)
                     .height(52.dp)
-                    .clip(RoundedCornerShape(26.dp))
+                    .clip(RoundedCornerShape(5.dp))
                     .background(
-                        if (ready) Brush.horizontalGradient(listOf(Pink, Color(0xFF9C1B6B), Cyan))
-                        else Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f)))
+                        if (ready) SolidColor(Brand)
+                        else SolidColor(Line)
                     )
                     .clickable(enabled = ready) {
                         busy = true
