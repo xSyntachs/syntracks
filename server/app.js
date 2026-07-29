@@ -714,7 +714,27 @@ $("list").addEventListener("touchend", (ev) => {
   if (Math.abs(moved) > 60) goToPage(page + (moved > 0 ? 1 : -1), totalPages);
 }, { passive: true });
 
+async function adoptUrlToken() {
+  const params = new URLSearchParams(location.search);
+  const fresh = params.get("token");
+  if (fresh) {
+    token = fresh;
+    localStorage.setItem("token", fresh);
+  }
+  if (fresh || params.get("auth")) history.replaceState(null, "", location.pathname);
+  return params.get("auth") === "failed";
+}
+
+async function showProviders() {
+  let available = [];
+  try { available = await (await fetch("/auth/providers")).json(); } catch (e) { return; }
+  if (!available.length) return;
+  $("social").classList.remove("hidden");
+  available.forEach(name => $("auth-" + name)?.classList.remove("hidden"));
+}
+
 async function boot() {
+  const failed = await adoptUrlToken();
   try { I18N = await (await fetch("/i18n.json")).json(); } catch (e) { I18N = {}; }
   applyStaticText();
   setRegisterMode(false);
@@ -725,6 +745,8 @@ async function boot() {
     <li>${T("howto_iphone")}</li>
     <li>${T("howto_collection")}</li>
   </ol>`);
+  showProviders();
+  if (failed) $("login-err").textContent = T("auth_failed");
   if (token) { show(true); fitPerPage(); load(); } else { show(false); }
 }
 boot();

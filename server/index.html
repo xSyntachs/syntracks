@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=63">
+<link rel="stylesheet" href="/styles.css?v=64">
 <script>
   const savedTheme = localStorage.getItem("theme") || "dark";
   if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
@@ -35,6 +35,24 @@
       <div class="err" id="login-err" role="alert"></div>
       <button class="btn-primary" id="login-btn">Sign in</button>
       <button class="link-btn" id="toggle-register">New here? Create an account</button>
+      <div class="social hidden" id="social">
+        <div class="social-line"><span data-i18n="or_continue_with">or continue with</span></div>
+        <div class="social-row">
+          <a class="social-btn hidden" id="auth-google" href="/auth/google" data-tip="sign_in_google">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.58v3h3.87c2.26-2.09 3.56-5.17 3.56-8.82Z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.94-2.91l-3.87-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.28v3.09A12 12 0 0 0 12 24Z"/>
+              <path fill="#FBBC05" d="M5.27 14.29a7.2 7.2 0 0 1 0-4.58V6.62H1.28a12 12 0 0 0 0 10.76l3.99-3.09Z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.28 6.62l3.99 3.09C6.22 6.86 8.87 4.75 12 4.75Z"/>
+            </svg>
+            <span data-i18n="google">Google</span></a>
+          <a class="social-btn hidden" id="auth-discord" href="/auth/discord" data-tip="sign_in_discord">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#5865F2" d="M20.3 4.6A19.8 19.8 0 0 0 15.4 3l-.24.5c1.6.4 2.9 1 4.1 1.8-2.1-1-4.2-1.7-7.3-1.7s-5.2.7-7.3 1.7c1.2-.8 2.6-1.5 4.1-1.8L8.6 3a19.8 19.8 0 0 0-4.9 1.6C1.7 8.4.9 12.5 1.2 17c1.9 1.4 3.7 2.3 5.5 2.9l1.2-1.7c-1-.4-1.9-.9-2.7-1.5l.6-.4c3.4 1.6 7.1 1.6 10.5 0l.6.4c-.8.6-1.7 1.1-2.7 1.5l1.2 1.7c1.8-.6 3.6-1.5 5.5-2.9.4-5.2-.8-9.3-2.6-12.4ZM8.4 14.6c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm7.2 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/>
+            </svg>
+            <span data-i18n="discord">Discord</span></a>
+        </div>
+      </div>
     </div>
     <div class="login-extras">
     <div class="tiles">
@@ -123,6 +141,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="overlays"></div>
-<script src="/app.js?v=63"></script>
+<script src="/app.js?v=64"></script>
 </body>
 </html>

@@ -16,8 +16,8 @@ from shazamio import Shazam
 from hmac import compare_digest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, quote, urlsplit
-from urllib.request import urlopen
+from urllib.parse import parse_qs, quote, urlencode, urlsplit
+from urllib.request import Request, urlopen
 
 BASE = Path(__file__).resolve().parent
 TOKEN = (BASE / "token.txt").read_text().strip()
@@ -46,6 +46,80 @@ SIGNUP_LOCK = threading.Lock()
 
 CACHE_MAX_AGE_DAYS = 14
 CACHE_SWEEP_HOURS = 6
+
+OAUTH_FILE = BASE / "oauth.json"
+OAUTH = json.loads(OAUTH_FILE.read_text(encoding="utf-8")) if OAUTH_FILE.exists() else {}
+OAUTH_STATES = {}
+OAUTH_STATE_LOCK = threading.Lock()
+OAUTH_STATE_TTL = 600
+
+PROVIDERS = {
+    "google": {
+        "authorize": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token": "https://oauth2.googleapis.com/token",
+        "profile": "https://www.googleapis.com/oauth2/v3/userinfo",
+        "scope": "openid email profile",
+        "id_key": "sub",
+        "name_keys": ("email", "given_name", "name"),
+    },
+    "discord": {
+        "authorize": "https://discord.com/oauth2/authorize",
+        "token": "https://discord.com/api/oauth2/token",
+        "profile": "https://discord.com/api/users/@me",
+        "scope": "identify email",
+        "id_key": "id",
+        "name_keys": ("username", "global_name"),
+    },
+}
+
+
+def post_form(url, fields):
+    body = urlencode(fields).encode()
+    request = Request(url, data=body, headers={
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "User-Agent": "Syntracks",
+    })
+    with urlopen(request, timeout=15) as response:
+        return json.loads(response.read())
+
+
+def get_json(url, access_token):
+    request = Request(url, headers={"Authorization": f"Bearer {access_token}",
+                                    "User-Agent": "Syntracks"})
+    with urlopen(request, timeout=15) as response:
+        return json.loads(response.read())
+
+
+def free_username(wanted, users):
+    base = re.sub(r"[^a-z0-9_.]", "", (wanted or "").split("@")[0].lower())[:20]
+    if len(base) < 3:
+        base = f"user{secrets.token_hex(3)}"
+    name = base
+    while name in users:
+        name = f"{base[:16]}{secrets.randbelow(9000) + 1000}"
+    return name
+
+
+def link_or_create(provider, profile):
+    spec = PROVIDERS[provider]
+    external = str(profile.get(spec["id_key"]) or "")
+    if not external:
+        return None
+    field = f"{provider}_id"
+    with USERS_LOCK:
+        users = load_users()
+        name = next((n for n, info in users.items() if info.get(field) == external), None)
+        if not name:
+            wanted = next((profile[k] for k in spec["name_keys"] if profile.get(k)), "")
+            name = free_username(wanted, users)
+            users[name] = {"salt": "", "hash": "", "tokens": [], field: external}
+        token = secrets.token_hex(24)
+        info = users[name]
+        info["tokens"] = (user_tokens(info) + [token])[-MAX_SESSIONS:]
+        info.pop("token", None)
+        save_users(users)
+    return token
 
 
 def t(key, lang):
@@ -512,6 +586,57 @@ class Handler(BaseHTTPRequestHandler):
             recent.append(now)
             return True
 
+    def redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def oauth_redirect_uri(self, provider):
+        host = (self.headers.get("Host") or "syntracks.app").split(":")[0]
+        return f"https://{host}/auth/{provider}/callback"
+
+    def start_oauth(self, provider):
+        spec = PROVIDERS[provider]
+        state = secrets.token_urlsafe(24)
+        now = datetime.now(timezone.utc).timestamp()
+        with OAUTH_STATE_LOCK:
+            for stale in [k for k, born in OAUTH_STATES.items() if now - born > OAUTH_STATE_TTL]:
+                OAUTH_STATES.pop(stale, None)
+            OAUTH_STATES[state] = now
+        return self.redirect(f"{spec['authorize']}?" + urlencode({
+            "client_id": OAUTH[provider]["client_id"],
+            "redirect_uri": self.oauth_redirect_uri(provider),
+            "response_type": "code",
+            "scope": spec["scope"],
+            "state": state,
+        }))
+
+    def finish_oauth(self, provider):
+        query = parse_qs(urlsplit(self.path).query)
+        code = (query.get("code") or [""])[0]
+        state = (query.get("state") or [""])[0]
+        with OAUTH_STATE_LOCK:
+            known = OAUTH_STATES.pop(state, None)
+        if not code or known is None:
+            return self.redirect("/?auth=failed")
+        spec = PROVIDERS[provider]
+        try:
+            granted = post_form(spec["token"], {
+                "client_id": OAUTH[provider]["client_id"],
+                "client_secret": OAUTH[provider]["client_secret"],
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": self.oauth_redirect_uri(provider),
+            })
+            profile = get_json(spec["profile"], granted["access_token"])
+            token = link_or_create(provider, profile)
+        except Exception as e:
+            print(f"OAuth {provider}: {e}", flush=True)
+            return self.redirect("/?auth=failed")
+        return self.redirect(f"/?token={token}" if token else "/?auth=failed")
+
     def reply(self, code, text, content_type="text/plain; charset=utf-8", no_store=False):
         body = (t(text, self.lang()) if text in I18N else text).encode()
         self.send_response(code)
@@ -754,6 +879,19 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/i18n.json":
             return self.reply(200, json.dumps(I18N, ensure_ascii=False),
                               "application/json; charset=utf-8", no_store=True)
+        if path == "/auth/providers":
+            return self.reply(200, json.dumps([p for p in PROVIDERS if p in OAUTH]),
+                              "application/json", no_store=True)
+        if path.startswith("/auth/"):
+            parts = path.strip("/").split("/")
+            provider = parts[1] if len(parts) > 1 else ""
+            if provider not in PROVIDERS or provider not in OAUTH:
+                return self.reply(404, "not_found")
+            if len(parts) == 2:
+                return self.start_oauth(provider)
+            if len(parts) == 3 and parts[2] == "callback":
+                return self.finish_oauth(provider)
+            return self.reply(404, "not_found")
         if path == "/styles.css":
             return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"),
                               "text/css; charset=utf-8", no_store=True)
