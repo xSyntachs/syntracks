@@ -66,7 +66,8 @@ async function readError(response) {
     ? `${T("server_error")} (${response.status})` : text;
 }
 
-function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ESCAPES[c]); }
 function fmtTime(sec) {
   if (!isFinite(sec)) return "0:00";
   return `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;

@@ -28,7 +28,7 @@ URL_RE = re.compile(r"https?://\S+")
 
 JOBS = queue.Queue()
 PENDING = defaultdict(dict)
-FILE_LOCK = threading.Lock()
+FILE_LOCK = threading.RLock()
 USERS_LOCK = threading.Lock()
 CLIPS = BASE / "clips"
 CLIPS.mkdir(exist_ok=True)
@@ -131,12 +131,18 @@ def today():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
+def write_atomic(path, text):
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
 def load_users():
     return json.loads(USERS_FILE.read_text(encoding="utf-8")) if USERS_FILE.exists() else {}
 
 
 def save_users(users):
-    USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_atomic(USERS_FILE, json.dumps(users, ensure_ascii=False, indent=2))
 
 
 def hash_pw(password, salt):
@@ -183,6 +189,11 @@ def claim_quota(username):
 def may_download(username):
     info = load_users().get(username, {})
     return bool(info.get("admin") or info.get("downloads"))
+
+
+def safe_url(value):
+    text = str(value or "").strip()
+    return text if text.startswith("https://") and len(text) <= 500 and not re.search(r"[\s\"'<>]", text) else None
 
 
 def clip_key(url):
@@ -480,7 +491,20 @@ def load_songs(username):
     if not path.exists():
         return []
     with FILE_LOCK:
-        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        lines = path.read_text(encoding="utf-8").splitlines()
+    songs = []
+    for line in lines:
+        try:
+            songs.append(json.loads(line))
+        except ValueError:
+            print(f"Kaputte Zeile in {path.name} übersprungen", flush=True)
+    return songs
+
+
+def save_songs(username, songs):
+    with FILE_LOCK:
+        write_atomic(songs_path(username),
+                     "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in songs))
 
 
 def append_song(username, entry):
@@ -493,16 +517,15 @@ def find_song(username, key):
 
 
 def bump_song(username, predicate):
-    songs = load_songs(username)
-    hit = next((s for s in songs if predicate(s)), None)
-    if not hit:
-        return False
-    songs.remove(hit)
-    hit["saved_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    songs.append(hit)
     with FILE_LOCK:
-        songs_path(username).write_text(
-            "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in songs), encoding="utf-8")
+        songs = load_songs(username)
+        hit = next((s for s in songs if predicate(s)), None)
+        if not hit:
+            return False
+        songs.remove(hit)
+        hit["saved_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        songs.append(hit)
+        save_songs(username, songs)
     return True
 
 
@@ -717,9 +740,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(400, "no_json")
             append_song(username, {
                 "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "track": track.get("track"), "original": False, "similar": True, "favorite": True,
-                "artist": track.get("artist"), "title": None, "url": track.get("url") or "",
-                "preview": track.get("preview"), "artwork": track.get("artwork"),
+                "track": str(track.get("track") or "")[:200], "original": False,
+                "similar": True, "favorite": True,
+                "artist": str(track.get("artist") or "")[:200], "title": None,
+                "url": safe_url(track.get("url")) or "",
+                "preview": safe_url(track.get("preview")), "artwork": safe_url(track.get("artwork")),
             })
             return self.reply(200, "saved_to_favorites")
         if path == "/favorite":
@@ -728,18 +753,14 @@ class Handler(BaseHTTPRequestHandler):
                 saved_at, value = str(data["saved_at"]), bool(data["value"])
             except (ValueError, KeyError):
                 return self.reply(400, "favorite_fields_missing")
-            updated = [{**s, "favorite": value} if s["saved_at"] == saved_at else s
-                       for s in load_songs(username)]
             with FILE_LOCK:
-                songs_path(username).write_text(
-                    "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in updated), encoding="utf-8")
+                save_songs(username, [{**s, "favorite": value} if s["saved_at"] == saved_at else s
+                                      for s in load_songs(username)])
             return self.reply(200, "favorite_updated")
         if path == "/delete":
             saved_at = self.body().strip()
-            remaining = [s for s in load_songs(username) if s["saved_at"] != saved_at]
             with FILE_LOCK:
-                songs_path(username).write_text(
-                    "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in remaining), encoding="utf-8")
+                save_songs(username, [s for s in load_songs(username) if s["saved_at"] != saved_at])
             return self.reply(200, "entry_removed")
         if path == "/rename":
             try:

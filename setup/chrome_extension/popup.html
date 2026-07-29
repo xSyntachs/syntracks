@@ -3,42 +3,90 @@
 <head>
 <meta charset="utf-8">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-  body { width: 300px; padding: 18px; color: #F4F4F8; background:
-    radial-gradient(circle at 15% 5%, rgba(120,40,200,.4), transparent 60%),
-    radial-gradient(circle at 95% 90%, rgba(254,44,85,.3), transparent 55%), #0a0a0f; }
-  h1 { font-size: 17px; font-weight: 900; margin-bottom: 2px; }
-  .sub { color: #9C9CA8; font-size: 12px; margin-bottom: 14px; }
-  input { width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
-          border-radius: 10px; color: #F4F4F8; padding: 10px 12px; font-size: 13px; outline: none; margin-top: 8px; }
-  input:focus { border-color: #25F4EE; }
-  button { width: 100%; margin-top: 12px; padding: 11px; border: none; border-radius: 20px; cursor: pointer;
-           font-size: 13px; font-weight: 700; color: #fff;
-           background: linear-gradient(90deg, #FE2C55, #9C1B6B, #25F4EE); }
-  button.flat { background: none; color: #25F4EE; font-weight: 400; padding: 6px; margin-top: 6px; }
-  .msg { font-size: 12px; margin-top: 10px; min-height: 16px; }
-  .msg.err { color: #FE2C55; }
-  .msg.ok { color: #4CD964; }
+  :root {
+    color-scheme: light;
+    --brand: #E9E64A;
+    --paper: #F7F6F0;
+    --ink: #121212;
+    --dim: #5C5A52;
+    --line: #DEDCD2;
+    --btn-bg: #121212;
+    --btn-ink: #E9E64A;
+    --danger: #C42B1C;
+    --ok: #2E7D4F;
+    --r: 5px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --paper: #121212; --ink: #F5F3E7; --dim: #9B9890;
+      --line: #2A2A26; --btn-bg: #E9E64A; --btn-ink: #121212;
+      --danger: #F0705F; --ok: #6FCF97;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Space Grotesk', system-ui, sans-serif; }
+  body { width: 320px; color: var(--ink); background: var(--paper); font-size: 15px; line-height: 1.5; }
+
+  .masthead { background: var(--brand); color: #121212; padding: 13px 14px; }
+  .masthead h1 { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 24px;
+                 font-weight: 800; letter-spacing: -.035em; line-height: 1; }
+  .masthead .sub { font-size: 12px; opacity: .78; margin-top: 4px; }
+
+  .pad, #login, #main { display: flex; flex-direction: column; gap: 8px; }
+  .pad { padding: 14px; }
+  #login.hidden, #main.hidden { display: none; }
+
+  input { width: 100%; background: transparent; border: 2px solid var(--line); border-radius: var(--r);
+          color: var(--ink); padding: 11px 13px; font-size: 14px; min-height: 46px; outline: none; }
+  input::placeholder { color: var(--dim); }
+  input:focus { border-color: var(--ink); }
+
+  .btn-primary { display: flex; align-items: center; justify-content: center; min-height: 48px;
+    padding: 13px 20px; border: none; border-radius: var(--r); cursor: pointer; width: 100%;
+    font-size: 15px; font-weight: 700; background: var(--btn-bg); color: var(--btn-ink); }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { background: var(--line); color: var(--dim); cursor: default; opacity: 1; }
+  .btn-ghost { display: flex; align-items: center; justify-content: center; min-height: 46px;
+    padding: 12px 18px; border: 2px solid var(--line); border-radius: var(--r); cursor: pointer;
+    width: 100%; background: none; color: var(--ink); font-size: 14px; font-weight: 500; }
+  .btn-ghost:hover { border-color: var(--ink); }
+  .link-btn { background: none; border: none; color: var(--ink); cursor: pointer; font-size: 13px;
+    font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; }
+
+  .msg { font-size: 13px; font-weight: 500; min-height: 18px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
   .hidden { display: none; }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+  .masthead :focus-visible { outline-color: #121212; }
 </style>
 </head>
 <body>
-  <h1><img src="icon48.png" width="20" height="20" style="vertical-align:-3px;margin-right:6px">Syntracks</h1>
-  <div class="sub" id="who">Nicht angemeldet</div>
+  <header class="masthead">
+    <h1>Syntracks</h1>
+    <div class="sub" id="who">Nicht angemeldet</div>
+  </header>
 
-  <div id="login">
-    <input type="text" id="user" placeholder="Benutzername">
-    <input type="password" id="pass" placeholder="Passwort">
-    <button id="login-btn">Anmelden</button>
+  <div class="pad">
+    <form id="login">
+      <input type="text" id="user" placeholder="Benutzername" autocomplete="off"
+             autocapitalize="off" spellcheck="false">
+      <input type="password" id="pass" placeholder="Passwort" autocomplete="off">
+      <input type="password" id="pass2" placeholder="Passwort best&auml;tigen" autocomplete="off" class="hidden">
+      <button class="btn-primary" id="login-btn">Anmelden</button>
+      <button class="link-btn" type="button" id="toggle-register">Neu hier? Konto erstellen</button>
+    </form>
+
+    <div id="main" class="hidden">
+      <button class="btn-primary" id="save-btn">Aktuelles Video speichern</button>
+      <button class="btn-ghost" id="open-web">Web-App &ouml;ffnen</button>
+      <button class="btn-ghost" id="logout">Abmelden</button>
+    </div>
+
+    <div class="msg" id="msg" role="alert"></div>
   </div>
-
-  <div id="main" class="hidden">
-    <button id="save-btn">Aktuelles Video speichern</button>
-    <button class="flat" id="open-web">Web-App &ouml;ffnen</button>
-    <button class="flat" id="logout">Abmelden</button>
-  </div>
-
-  <div class="msg" id="msg"></div>
   <script src="popup.js"></script>
 </body>
 </html>

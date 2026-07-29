@@ -17,5 +17,10 @@ function tagItems() {
   }
 }
 
-new MutationObserver(tagItems).observe(document.body, { childList: true, subtree: true });
+let tagPending = false;
+new MutationObserver(() => {
+  if (tagPending) return;
+  tagPending = true;
+  requestAnimationFrame(() => { tagPending = false; tagItems(); });
+}).observe(document.body, { childList: true, subtree: true });
 tagItems();

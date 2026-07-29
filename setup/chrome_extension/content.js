@@ -1,21 +1,25 @@
-const NOTE_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff"
-  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+const BRAND = "#E9E64A";
+const INK = "#121212";
+
+const NOTE_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="${INK}"
+  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
   <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
 
-function showToast(text, withLink) {
+function showToast(text, success) {
   document.getElementById("tts-toast")?.remove();
   const toast = document.createElement("div");
   toast.id = "tts-toast";
   toast.style.cssText = `position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:99999;
-    background:#191921;color:#F5F5FA;border:1px solid rgba(255,255,255,.25);border-radius:14px;
-    padding:14px 22px;font:14px/1.4 system-ui;box-shadow:0 10px 40px rgba(0,0,0,.6);max-width:420px`;
+    background:${INK};color:#F5F3E7;border:2px solid ${success ? BRAND : "#2A2A26"};border-radius:5px;
+    padding:13px 18px;font:500 14px/1.4 'Space Grotesk',system-ui,sans-serif;max-width:420px`;
   toast.textContent = text;
-  if (withLink) {
+  if (success) {
     const link = document.createElement("a");
-    link.href = "https://syntracks.xsyntachs.de";
+    link.href = "https://syntracks.app";
     link.target = "_blank";
     link.textContent = "Sammlung öffnen";
-    link.style.cssText = "color:#25F4EE;margin-left:10px;text-decoration:none";
+    link.style.cssText = `color:${BRAND};margin-left:10px;font-weight:700;text-decoration:underline;
+      text-underline-offset:3px`;
     toast.appendChild(link);
   }
   document.body.appendChild(toast);
@@ -45,6 +49,16 @@ function saveVideo(button) {
   });
 }
 
+function saveButton(size) {
+  const btn = document.createElement("button");
+  btn.title = "Song speichern (Syntracks)";
+  btn.style.cssText = `width:${size}px;height:${size}px;border:none;border-radius:5px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex:none;background:${BRAND}`;
+  const glyph = Math.round(size * 0.46);
+  btn.innerHTML = NOTE_SVG.replace('width="22" height="22"', `width="${glyph}" height="${glyph}"`);
+  return btn;
+}
+
 function injectButtons() {
   document.querySelectorAll('[data-e2e="share-icon"]').forEach((shareIcon) => {
     const wrapper = shareIcon.closest("button")?.parentElement || shareIcon.parentElement;
@@ -52,34 +66,30 @@ function injectButtons() {
     const holder = document.createElement("div");
     holder.className = "tts-save";
     holder.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px";
-    const btn = document.createElement("button");
-    btn.title = "Song speichern (Syntracks)";
-    btn.style.cssText = `width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      background:linear-gradient(135deg,#FE2C55,#7828C8)`;
-    btn.innerHTML = NOTE_SVG;
+    const btn = saveButton(48);
     btn.onclick = (e) => { e.stopPropagation(); saveVideo(btn); };
     const label = document.createElement("span");
     label.textContent = "Song speichern";
-    label.style.cssText = `font: 700 11px/1.15 system-ui; color: rgba(255,255,255,.9);
-      text-align:center; max-width:56px`;
+    label.style.cssText = `font:700 11px/1.15 'Space Grotesk',system-ui,sans-serif;
+      color:rgba(255,255,255,.9);text-align:center;max-width:56px`;
     holder.appendChild(btn);
     holder.appendChild(label);
     wrapper.parentElement.insertBefore(holder, wrapper.nextSibling);
   });
   document.querySelectorAll('[data-e2e="browse-share-group"]').forEach((group) => {
     if (group.querySelector(".tts-save")) return;
-    const btn = document.createElement("button");
+    const btn = saveButton(32);
     btn.className = "tts-save";
-    btn.title = "Song speichern (Syntracks)";
-    btn.style.cssText = `width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;margin-right:8px;flex:none;
-      background:linear-gradient(135deg,#FE2C55,#7828C8)`;
-    btn.innerHTML = NOTE_SVG.replace('width="22" height="22"', 'width="17" height="17"');
+    btn.style.marginRight = "8px";
     btn.onclick = (e) => { e.stopPropagation(); e.preventDefault(); saveVideo(btn); };
     group.insertBefore(btn, group.firstChild);
   });
 }
 
-new MutationObserver(injectButtons).observe(document.body, { childList: true, subtree: true });
+let injectPending = false;
+new MutationObserver(() => {
+  if (injectPending) return;
+  injectPending = true;
+  requestAnimationFrame(() => { injectPending = false; injectButtons(); });
+}).observe(document.body, { childList: true, subtree: true });
 injectButtons();
