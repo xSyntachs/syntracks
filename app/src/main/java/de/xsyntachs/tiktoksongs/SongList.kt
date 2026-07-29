@@ -35,9 +35,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -62,7 +64,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -149,80 +153,80 @@ fun SongList(
     onDelete: (Song) -> Unit,
     onSaveRec: (SimilarTrack) -> Unit,
 ) {
-    var page by remember(shown.size, showRecs, filtered) { mutableStateOf(1) }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        clipboardSuggestion?.let {
+            GlassBox {
+                Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("TikTok-Link in der Zwischenablage", Modifier.weight(1f), fontSize = 14.sp)
+                    Surface(
+                        color = Cyan.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(99.dp),
+                        modifier = Modifier.clickable { onClipboardHandled(true) },
+                    ) {
+                        Text("Speichern", Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontSize = 13.sp, color = Cyan)
+                    }
+                    IconButton(onClick = { onClipboardHandled(false) }) {
+                        Icon(Icons.Default.Close, "Verwerfen", tint = Scheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        error?.let {
+            GlassBox { Text(it, Modifier.padding(16.dp), color = Pink) }
+        }
+        if (feed != null && feed.pending > 0) {
+            PendingCard(feed.pending, feed.pendingStage)
+        }
+        when {
+            showRecs -> RecsCard(recs, savedRecs, clipPlayer, onSaveRec)
+            feed != null && shown.isEmpty() && feed.pending == 0 -> EmptyState(filtered)
+            shown.isNotEmpty() -> SongPages(
+                shown = shown,
+                filtered = filtered,
+                clipPlayer = clipPlayer,
+                playProgress = playProgress,
+                onSeek = onSeek,
+                onVolume = onVolume,
+                onPlayFull = onPlayFull,
+                onSimilar = onSimilar,
+                onFavorite = onFavorite,
+                onDelete = onDelete,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SongPages(
+    shown: List<Song>,
+    filtered: Boolean,
+    clipPlayer: ClipPlayer,
+    playProgress: Float,
+    onSeek: (Float) -> Unit,
+    onVolume: (Float) -> Unit,
+    onPlayFull: (Song) -> Unit,
+    onSimilar: (Song) -> Unit,
+    onFavorite: (Song) -> Unit,
+    onDelete: (Song) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier.fillMaxWidth()) {
         val perPage = ((maxHeight - 60.dp) / 108.dp).toInt().coerceAtLeast(3)
         val pageCount = ((shown.size + perPage - 1) / perPage).coerceAtLeast(1)
-        val current = page.coerceIn(1, pageCount)
-        val pageItems = shown.drop((current - 1) * perPage).take(perPage)
+        val pagerState = rememberPagerState(pageCount = { pageCount })
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(shown.size, filtered) { pagerState.scrollToPage(0) }
         Column(Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                clipboardSuggestion?.let {
-                    item {
-                        GlassBox {
-                            Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text("TikTok-Link in der Zwischenablage", Modifier.weight(1f), fontSize = 14.sp)
-                                Surface(
-                                    color = Cyan.copy(alpha = 0.25f),
-                                    shape = RoundedCornerShape(99.dp),
-                                    modifier = Modifier.clickable { onClipboardHandled(true) },
-                                ) {
-                                    Text("Speichern", Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        fontSize = 13.sp, color = Cyan)
-                                }
-                                IconButton(onClick = { onClipboardHandled(false) }) {
-                                    Icon(Icons.Default.Close, "Verwerfen", tint = Scheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
-                }
-                error?.let {
-                    item {
-                        GlassBox { Text(it, Modifier.padding(16.dp), color = Pink) }
-                    }
-                }
-                if (feed != null && feed.pending > 0) {
-                    item { PendingCard(feed.pending, feed.pendingStage) }
-                }
-                if (showRecs) {
-                    item {
-                        GlassBox {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Für dich", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Text("Auf Basis deiner letzten Songs", fontSize = 12.sp, color = Scheme.onSurfaceVariant)
-                                Spacer(Modifier.height(6.dp))
-                                when {
-                                    recs == null -> Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        CircularProgressIndicator(Modifier.size(20.dp), color = Cyan, strokeWidth = 2.dp)
-                                        Spacer(Modifier.width(10.dp))
-                                        Text("Empfehlungen werden gesucht…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
-                                    }
-                                    recs.isEmpty() -> Text("Gerade keine neuen Empfehlungen.",
-                                        color = Scheme.onSurfaceVariant, fontSize = 13.sp)
-                                    else -> recs.forEach { track ->
-                                        SimilarRow(
-                                            track = track,
-                                            playing = clipPlayer.state?.takeIf { it.first == track.preview }?.second,
-                                            alreadySaved = track.track + track.artist in savedRecs,
-                                            onPlay = { track.preview?.let { clipPlayer.toggle(it, it) } },
-                                            onSave = { onSaveRec(track) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (feed != null && shown.isEmpty() && feed.pending == 0 && !showRecs) {
-                    item { EmptyState(filtered) }
-                }
-                items(pageItems, key = { it.savedAt }) { song ->
-                    Box(Modifier.animateItem()) {
+            VerticalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f),
+                pageSpacing = 8.dp,
+            ) { index ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    shown.drop(index * perPage).take(perPage).forEach { song ->
                         SongCard(
                             song = song,
                             buffering = clipPlayer.state?.takeIf { it.first == song.clip }?.second,
@@ -239,7 +243,43 @@ fun SongList(
                     }
                 }
             }
-            if (!showRecs && pageCount > 1) Pager(current, pageCount) { page = it }
+            if (pageCount > 1) Pager(pagerState.currentPage + 1, pageCount) { picked ->
+                scope.launch { pagerState.animateScrollToPage(picked - 1) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecsCard(
+    recs: List<SimilarTrack>?,
+    savedRecs: List<String>,
+    clipPlayer: ClipPlayer,
+    onSaveRec: (SimilarTrack) -> Unit,
+) {
+    GlassBox {
+        Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+            Text("Für dich", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text("Auf Basis deiner letzten Songs", fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+            Spacer(Modifier.height(6.dp))
+            when {
+                recs == null -> Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(20.dp), color = Cyan, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Empfehlungen werden gesucht…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+                }
+                recs.isEmpty() -> Text("Gerade keine neuen Empfehlungen.",
+                    color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+                else -> recs.forEach { track ->
+                    SimilarRow(
+                        track = track,
+                        playing = clipPlayer.state?.takeIf { it.first == track.preview }?.second,
+                        alreadySaved = track.track + track.artist in savedRecs,
+                        onPlay = { track.preview?.let { clipPlayer.toggle(it, it) } },
+                        onSave = { onSaveRec(track) },
+                    )
+                }
+            }
         }
     }
 }

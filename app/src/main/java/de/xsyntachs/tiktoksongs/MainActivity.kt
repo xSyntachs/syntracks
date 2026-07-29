@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -175,7 +176,6 @@ private fun downloadUpdate(context: Context) {
 class ClipPlayer {
     private var player: MediaPlayer? = null
 
-    /** Clip-Key zu "lädt noch", null wenn nichts spielt */
     var state by mutableStateOf<Pair<String, Boolean>?>(null)
         private set
 
@@ -289,9 +289,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ponytail: Registrierung bei jedem App-Start, nach einem Reboot greift sie erst beim nächsten Öffnen
     private fun scheduleWeeklyDigest() {
-        // Aufräumen der abgeschafften Dauer-Benachrichtigung "Song speichern"
         getSystemService(android.app.NotificationManager::class.java).apply {
             cancel(4)
             deleteNotificationChannel("quick")
@@ -359,8 +357,9 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
             Api.syncUser(context, JSONObject(raw).optString("user"))
             feed = parseFeed(raw)
             error = null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            // Sitzung serverseitig beendet (Anmeldung auf einem anderen Gerät) -> zurück zum Login
             if (e.message == "Nicht angemeldet") {
                 android.widget.Toast.makeText(context,
                     "Sitzung abgelaufen, bitte neu anmelden", android.widget.Toast.LENGTH_LONG).show()
@@ -378,10 +377,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(Unit) {
+        var firstStart = true
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (!firstStart) tick++
+            firstStart = false
             while (true) {
-                tick++
                 delay(12_000)
+                tick++
             }
         }
     }
@@ -429,8 +431,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     }
 
     val songs = feed?.songs.orEmpty().filter { it.savedAt !in hidden }
-    // Spotify-Prinzip: Songs / Favoriten / Empfehlungen als Bereiche, der Filter regelt nur Quellen
-    val shown = if (view == "RECS") emptyList() else songs.filter { song ->
+    val shown =if (view == "RECS") emptyList() else songs.filter { song ->
         when {
             view == "FAV" -> song.favorite
             song.source == Song.Source.SIMILAR -> false
@@ -442,7 +443,6 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
     fun deleteWithUndo(song: Song) {
         hidden.add(song.savedAt)
         scope.launch {
-            // Mit actionLabel wäre die Default-Dauer Indefinite, dann läuft das Löschen nie
             val result = snackbar.showSnackbar("Song gelöscht", actionLabel = "Rückgängig",
                 duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {

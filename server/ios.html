@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=65">
+<link rel="stylesheet" href="/styles.css?v=66">
 <script>
   const savedTheme = localStorage.getItem("theme") || "dark";
   if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
@@ -58,6 +58,8 @@
   .mini-copy { border: none; background: var(--btn-bg); color: var(--btn-ink); border-radius: var(--r);
                padding: 10px 16px; min-height: 44px; font-size: 13px; font-weight: 700;
                cursor: pointer; white-space: nowrap; flex: none; }
+  .mini-copy.ghost { background: none; border: 2px solid var(--line); color: var(--ink); font-weight: 600; }
+  .mini-copy.ghost:hover { border-color: var(--ink); }
 
   figure { margin: 12px 0 0; }
   figure svg.shot { width: 100%; max-width: 300px; height: auto; display: block;
@@ -102,6 +104,7 @@
           <div class="code-row">
             <code class="block" id="token" data-i18n="ios_not_signed"></code>
             <button class="mini-copy" id="copy-token" data-source="token"></button>
+            <button class="mini-copy ghost hidden" id="signout-token"></button>
           </div>
         </li>
         <li>
@@ -226,6 +229,7 @@ function applyText() {
     el.textContent = T(el.dataset.i18n);
   });
   document.querySelectorAll(".mini-copy").forEach(b => {
+    if (b.id === "signout-token") { b.textContent = T("sign_out"); return; }
     b.textContent = b.id === "copy-token" && !hasToken ? T("sign_in") : T("copy");
   });
 }
@@ -235,6 +239,15 @@ function showToken(value) {
   hasToken = true;
   $("token").textContent = value;
   $("copy-token").textContent = T("copy");
+  $("signout-token").classList.remove("hidden");
+}
+
+function signOut() {
+  localStorage.removeItem("ios_token");
+  hasToken = false;
+  $("token").textContent = T("ios_not_signed");
+  $("copy-token").textContent = T("sign_in");
+  $("signout-token").classList.add("hidden");
 }
 
 function loginDialog() {
@@ -304,9 +317,15 @@ async function copyText(button, text) {
   try { I18N = await (await fetch("/i18n.json")).json(); } catch { I18N = {}; }
   $("target-url").textContent = `${location.origin}/add`;
   const stored = localStorage.getItem("ios_token");
-  if (stored) { hasToken = true; $("token").textContent = stored; }
+  if (stored) {
+    hasToken = true;
+    $("token").textContent = stored;
+    $("signout-token").classList.remove("hidden");
+  }
   applyText();
+  $("signout-token").onclick = signOut;
   for (const button of document.querySelectorAll(".mini-copy")) {
+    if (button.id === "signout-token") continue;
     const source = $(button.dataset.source);
     button.onclick = () => {
       if (button.id === "copy-token" && !hasToken) { loginDialog(); return; }

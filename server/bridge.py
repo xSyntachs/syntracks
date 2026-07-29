@@ -39,6 +39,8 @@ LANGS = ("en", "de", "es", "fr", "pt", "tr")
 WORKERS = 3
 SHAZAM_GATE = threading.Semaphore(1)
 
+CLEAN_SKEW = 0.01
+
 DAILY_SONG_LIMIT = 50
 SIGNUPS_PER_HOUR = 5
 SIGNUPS = defaultdict(list)
@@ -322,7 +324,7 @@ def recognize(clip):
     winner_key, _ = Counter(base_key(m) for *_, m in candidates).most_common(1)[0]
     votes = len({r for _, r, _, m in candidates if base_key(m) == winner_key})
     skew, rate, offset, match = min((c for c in candidates if base_key(c[3]) == winner_key), key=lambda c: c[0])
-    if votes < 2:
+    if votes < 2 and skew > CLEAN_SKEW:
         if duration > 34:
             probe_offset = 0.0 if offset > duration / 2 else max(0.0, duration - 22)
             probe_rate = rate
@@ -336,8 +338,8 @@ def recognize(clip):
                            capture_output=True, timeout=60)
             confirm = asyncio.run(Shazam().recognize(probe)).get("track")
         if not confirm or base_key(confirm) != winner_key:
-            print(f"Einzeltreffer hielt der Zweitprobe nicht stand: {match['subtitle']} - {match['title']}",
-                  flush=True)
+            print(f"Einzeltreffer hielt der Zweitprobe nicht stand (Skew {skew}): "
+                  f"{match['subtitle']} - {match['title']}", flush=True)
             return None
     title = match["title"]
     hit = {"artist": match["subtitle"], "recognized": True}

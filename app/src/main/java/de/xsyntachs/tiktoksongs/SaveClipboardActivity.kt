@@ -10,7 +10,6 @@ class SaveClipboardActivity : Activity() {
 
     private var handled = false
 
-    // Zwischenablage ist ab Android 10 erst mit Fenster-Fokus lesbar, nicht in onCreate
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus || handled) return

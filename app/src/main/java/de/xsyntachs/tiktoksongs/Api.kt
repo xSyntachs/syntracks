@@ -32,7 +32,6 @@ object Api {
         user = null
     }
 
-    /** wirft bei falschen Daten mit der Server-Meldung als message */
     fun register(context: Context, name: String, password: String) =
         auth(context, "/register", name, password)
     fun login(context: Context, name: String, password: String) = auth(context, "/login", name, password)
