@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=61">
+<link rel="stylesheet" href="/styles.css?v=62">
 <script>
   // Vor dem ersten Zeichnen setzen, sonst blitzt der falsche Modus auf
   const savedTheme = localStorage.getItem("theme") || "dark";
@@ -30,9 +30,9 @@
   <div class="login-body">
     <div class="login-box">
     <div class="login-form">
-      <input type="text" id="user" data-ph="username" autocomplete="username">
-      <input type="password" id="pass" data-ph="password" autocomplete="current-password">
-      <input type="password" id="pass2" data-ph="confirm_password" autocomplete="new-password" class="hidden">
+      <input type="text" id="user" data-ph="username" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input type="password" id="pass" data-ph="password" autocomplete="off">
+      <input type="password" id="pass2" data-ph="confirm_password" autocomplete="off" class="hidden">
       <div class="err" id="login-err" role="alert"></div>
       <button class="btn-primary" id="login-btn">Sign in</button>
       <button class="link-btn" id="toggle-register">New here? Create an account</button>
@@ -124,6 +124,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="overlays"></div>
-<script src="/app.js?v=61"></script>
+<script src="/app.js?v=62"></script>
 </body>
 </html>

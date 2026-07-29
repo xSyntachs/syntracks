@@ -703,7 +703,9 @@ function setRegisterMode(on) {
   $("login-btn").textContent = registerMode ? T("create_account") : T("sign_in");
   $("toggle-register").textContent = registerMode ? T("already_account") : T("new_here");
   $("pass2").classList.toggle("hidden", !registerMode);
-  $("pass").autocomplete = registerMode ? "new-password" : "current-password";
+  // Beim Wechsel leeren, sonst wandert die Anmeldeeingabe in die Registrierung
+  for (const id of ["user", "pass", "pass2"]) $(id).value = "";
+  $("login-err").textContent = "";
 }
 $("toggle-register").onclick = () => setRegisterMode(!registerMode);
 $("search").addEventListener("input", () => { page = 1; render(); });
