@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Syntracks aufs iPhone</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=50">
+<style>
+  html, body { height: auto; overflow: auto; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 26px; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 38px 0 12px; }
+  p { color: var(--muted); line-height: 1.6; }
+  ol { line-height: 1.7; padding-left: 0; list-style: none; counter-reset: schritt; margin: 0; }
+  ol li { margin-bottom: 18px; padding-left: 40px; position: relative; }
+  ol li::before {
+    counter-increment: schritt;
+    content: counter(schritt);
+    position: absolute; left: 0; top: 0;
+    width: 27px; height: 27px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(254,44,85,.16); color: var(--pink);
+    font-size: 13px; font-weight: 700;
+  }
+  code {
+    background: rgba(0,0,0,.4);
+    border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 7px;
+    font-family: ui-monospace, monospace; font-size: 13px;
+    white-space: nowrap; display: inline-block;
+  }
+  code.lang { white-space: normal; overflow-wrap: anywhere; display: block; }
+  .code-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .code-row code { flex: 1; min-width: 170px; }
+  .mini-copy {
+    border: 1px solid rgba(254,44,85,.45);
+    background: rgba(254,44,85,.12);
+    color: var(--pink);
+    border-radius: var(--r-pill); padding: 6px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; flex: none;
+  }
+  .mini-copy:active { background: rgba(254,44,85,.25); }
+  .mini-copy[disabled] { opacity: .5; cursor: default; border-style: dashed; }
+  .box { border: 1px solid var(--border); background: var(--glass);
+         border-radius: var(--r-card); padding: 16px 18px; margin: 16px 0; }
+  .box input { margin-bottom: 8px; }
+  .step { color: var(--pink); font-weight: 600; }
+  dl { margin: 0; }
+  dt { font-weight: 600; margin-top: 16px; }
+  dd { margin: 4px 0 0; color: var(--muted); line-height: 1.6; }
+  #angemeldet { display: none; }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="wrap">
+  <h1 class="display">Syntracks aufs iPhone</h1>
+  <p>Am Ende steht Syntracks im Teilen-Men&uuml; von TikTok. Du tippst auf Teilen, w&auml;hlst Syntracks,
+     und der Song landet in deiner Sammlung. Dauert zwei Minuten und kostet nichts.</p>
+
+  <div class="box" id="login-box">
+    <b>Melde dich an</b>
+    <p style="margin:6px 0 12px">Danach zeigt dir diese Seite deinen Zugangscode f&uuml;r Schritt 6.</p>
+    <input type="text" id="user" placeholder="Benutzername" autocomplete="username">
+    <input type="password" id="pass" placeholder="Passwort" autocomplete="current-password">
+    <button id="go" class="btn-primary">Anmelden</button>
+    <p id="msg" class="err"></p>
+  </div>
+
+  <p class="box" id="angemeldet"></p>
+
+  <h2>Kurzbefehl anlegen</h2>
+  <ol>
+    <li>&Ouml;ffne die App <span class="step">Kurzbefehle</span>.</li>
+
+    <li>Tippe oben rechts auf <span class="step">+</span>.</li>
+
+    <li>Tippe auf <span class="step">Aktion hinzuf&uuml;gen</span>, such nach
+        <span class="step">Inhalte von URL abrufen</span> und w&auml;hl die Aktion aus.</li>
+
+    <li>Setz als Adresse ein:
+      <div class="code-row">
+        <code class="lang" id="ziel-adresse">https://syntracks.xsyntachs.de/add</code>
+        <button class="mini-copy" data-quelle="ziel-adresse">Kopieren</button>
+      </div>
+    </li>
+
+    <li>Tippe auf den Pfeil <span class="step">&#9662;</span> hinter der Adresse und stell
+        <span class="step">Methode</span> auf <span class="step">POST</span>.</li>
+
+    <li>Tippe auf <span class="step">neue &Uuml;berschrift hinzuf&uuml;gen</span>. Schreib als Schl&uuml;ssel
+        <code>X-Token</code> und setz als Wert deinen Zugangscode ein:
+      <div class="code-row">
+        <code class="lang" id="token">Melde dich oben an</code>
+        <button class="mini-copy" data-quelle="token" id="copy-token" disabled>Kopieren</button>
+      </div>
+    </li>
+
+    <li>Stell <span class="step">Haupttext anfordern</span> auf <span class="step">Datei</span> und
+        setz als Inhalt die blaue Variable <span class="step">Kurzbefehleingabe</span> ein.</li>
+
+    <li>Tippe auf die blaue <span class="step">Kurzbefehleingabe</span> und stell in der Zeile
+        <span class="step">Typ</span> den Wert auf <span class="step">Text</span>.
+        <p style="margin:8px 0 0;font-size:13px">Dieser Schritt entscheidet. Bei jedem anderen Typ
+           l&auml;dt iOS erst die TikTok-Seite herunter und schickt deren Inhalt statt der Adresse.</p></li>
+
+    <li>Tippe oben auf den Namen, nenn den Kurzbefehl <span class="step">Syntracks</span> und schalte
+        <span class="step">Im Teilen-Men&uuml; anzeigen</span> ein. Speichern.</li>
+  </ol>
+
+  <h2>Song speichern</h2>
+  <ol>
+    <li>Tippe in TikTok auf <span class="step">Teilen</span>.</li>
+    <li>Wisch in der Symbolreihe nach rechts und tippe auf <span class="step">Mehr</span>.</li>
+    <li>Tippe auf <span class="step">Syntracks</span>. Die Erkennung l&auml;uft danach auf dem Server,
+        nach einer halben Minute steht der Song in deiner Sammlung.</li>
+  </ol>
+
+  <h2>Wenn etwas klemmt</h2>
+  <dl>
+    <dt>Syntracks fehlt im Teilen-Men&uuml;</dt>
+    <dd>Wisch im Teilen-Men&uuml; ganz nach unten, tippe auf <span class="step">Aktionen bearbeiten</span>
+        und schieb Syntracks nach oben. Seit iOS 26 muss man Kurzbefehle einmal anheften.</dd>
+
+    <dt>Der Play-Knopf im Editor meldet einen Fehler</dt>
+    <dd>Der Editor startet den Kurzbefehl ohne geteiltes Video, deshalb kommt dort keine Adresse an.
+        Teste mit einem echten Video aus TikTok.</dd>
+
+    <dt>Die Antwort lautet "Kein TikTok-Link im geteilten Text"</dt>
+    <dd>Geh zur&uuml;ck zu Schritt 8. Tippe auf die blaue <span class="step">Kurzbefehleingabe</span>
+        und stell die Auswahl auf <span class="step">Text</span>. Steht dort etwas anderes,
+        schickt iOS die Startseite von TikTok statt der Videoadresse.</dd>
+
+    <dt>Der Kurzbefehl meldet "Die Netzwerkverbindung wurde unterbrochen"</dt>
+    <dd>Pr&uuml;f zuerst die Zeilen unter <span class="step">&Uuml;berschrift</span> und l&ouml;sch jede, die leer
+        ist oder nur halb ausgef&uuml;llt aussieht. Hilft das nicht, leg den Kurzbefehl neu an. Diese
+        Meldung stammt fast immer von einer besch&auml;digten Kopfzeile, die im Editor unauff&auml;llig
+        aussieht, und nicht vom Server.</dd>
+
+    <dt>Die Antwort lautet "Nicht angemeldet"</dt>
+    <dd>Vergleich den Code in Schritt 6 mit dem in deinem Kurzbefehl. Sie m&uuml;ssen zeichengenau
+        &uuml;bereinstimmen. Nach einem Passwortwechsel brauchst du einen frischen Code, sonst bleibt
+        er dauerhaft g&uuml;ltig.</dd>
+  </dl>
+
+  <p style="margin-top:34px"><a href="/" style="color:var(--cyan)">Zur&uuml;ck zur Sammlung</a></p>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function anmelden() {
+  $("msg").textContent = "";
+  try {
+    const antwort = await fetch("/login", {
+      method: "POST",
+      body: JSON.stringify({ user: $("user").value.trim().toLowerCase(), pass: $("pass").value }),
+    });
+    const text = await antwort.text();
+    if (!antwort.ok) { $("msg").textContent = text; return; }
+    const daten = JSON.parse(text);
+    zeigeToken(daten.token, daten.user);
+  } catch {
+    $("msg").textContent = "Server nicht erreichbar.";
+  }
+}
+
+function zeigeToken(token, name) {
+  localStorage.setItem("token", token);
+  if (name) localStorage.setItem("user", name);
+  const wer = name || localStorage.getItem("user");
+  $("token").textContent = token;
+  $("copy-token").disabled = false;
+  $("angemeldet").innerHTML = wer
+    ? `Angemeldet als <b></b>. Dein Zugangscode steht unten in Schritt 6.`
+    : "Dein Zugangscode steht unten in Schritt 6.";
+  if (wer) $("angemeldet").querySelector("b").textContent = wer;
+  $("login-box").style.display = "none";
+  $("angemeldet").style.display = "block";
+}
+
+async function kopieren(knopf, text) {
+  const beschriftung = knopf.dataset.label || knopf.textContent;
+  knopf.dataset.label = beschriftung;
+  let geklappt = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    geklappt = true;
+  } catch {
+    const hilfsfeld = document.createElement("textarea");
+    hilfsfeld.value = text;
+    hilfsfeld.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(hilfsfeld);
+    hilfsfeld.select();
+    geklappt = document.execCommand("copy");
+    hilfsfeld.remove();
+  }
+  knopf.textContent = geklappt ? "Kopiert" : "Markier ihn von Hand";
+  setTimeout(() => (knopf.textContent = beschriftung), 2000);
+}
+
+$("go").onclick = anmelden;
+$("pass").onkeydown = (e) => { if (e.key === "Enter") anmelden(); };
+
+for (const knopf of document.querySelectorAll(".mini-copy")) {
+  const feld = $(knopf.dataset.quelle);
+  knopf.onclick = () => kopieren(knopf, feld.textContent);
+  feld.onclick = () => getSelection().selectAllChildren(feld);
+}
+
+const gespeichert = localStorage.getItem("token");
+if (gespeichert) zeigeToken(gespeichert);
+</script>
+</body>
+</html>

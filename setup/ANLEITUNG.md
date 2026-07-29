@@ -1,4 +1,4 @@
-# Syntracks — Setup
+# Syntracks Setup
 
 Alles was du brauchst, um Syntracks auf einem neuen Handy oder im Browser einzurichten.
 
@@ -10,7 +10,7 @@ Syntracks merkt sich die Musik aus TikTok-Videos. Video teilen oder Link speiche
 
 1. Diese Datei aufs Handy schicken oder den Link im Handy-Browser öffnen und herunterladen. Datei: `syntracks.apk` (alternativ der Download-Link, siehe unten).
 2. Die heruntergeladene APK antippen. Android warnt vor unbekannten Quellen, einmal **"Trotzdem installieren"** bzw. der Quelle erlauben.
-3. App öffnen, **"Konto erstellen"** antippen. Benutzername und Passwort ausdenken und den **Einladungs-Key** eintragen, den du vom Admin bekommen hast. Account-Sharing ist nicht erlaubt, pro Konto laufen maximal 3 Anmeldungen (App, Browser, Erweiterung), jede weitere wirft die älteste raus.
+3. App öffnen, **"Konto erstellen"** antippen. Benutzername und Passwort ausdenken und den **Einladungs-Key** eintragen, den du vom Admin bekommen hast.
 4. Benachrichtigungen erlauben, wenn die App fragt (sonst siehst du nicht, welcher Song erkannt wurde).
 5. Updates macht die App selbst. Wenn eine neue Version existiert, erscheint oben ein Banner, einmal **Aktualisieren** tippen. Beim allerersten Update fragt Android einmalig, ob die App aus dieser Quelle installieren darf, das erlauben.
 
@@ -20,29 +20,30 @@ Songs speichern geht dann so: In TikTok beim Video auf **Teilen** und dann **Syn
 
 Einfach https://syntracks.xsyntachs.de öffnen und anmelden. Ein neues Konto brauchst du nur einmal, dafür gibt dir ein Admin einen Einladungslink, der den Key schon ausfüllt. Gleiche Liste wie in der App, mit Anhören, Suche, Filter und Downloads.
 
-## 3. Chrome-Erweiterung installieren
+## 3. iPhone
 
-Die Erweiterung speichert das gerade im Browser offene TikTok-Video mit einem Klick.
+Für iOS gibt es keine App, der Weg läuft über einen Apple-Kurzbefehl. Öffne https://syntracks.xsyntachs.de/ios auf dem iPhone, melde dich an und folge den Schritten. Danach steht Syntracks im Teilen-Menü von TikTok.
 
-**Ganz einfache Installation, 4 Schritte:**
+## 4. Chrome-Erweiterung installieren
 
-1. Chrome öffnen und in die Adresszeile tippen: `chrome://extensions`
-2. Oben rechts den Schalter **"Entwicklermodus"** einschalten.
-3. Auf **"Entpackte Erweiterung laden"** klicken.
-4. Den Ordner `chrome_extension` (liegt neben dieser Datei) auswählen. Fertig.
+Die Erweiterung setzt einen Speichern-Knopf direkt neben die Teilen-Schaltfläche auf tiktok.com.
 
-Danach oben in Chrome das Noten-Symbol anpinnen (Puzzle-Symbol, dann die Pinnadel bei Syntracks). Benutzung: TikTok-Video im Browser öffnen, Noten-Symbol klicken, einmalig anmelden, dann **"Aktuelles Video speichern"**.
+Installieren über den Chrome Web Store, dann kommen Updates automatisch:
+https://chromewebstore.google.com/detail/hlecjdomfgbhajgeepojmobogolpcllg
 
-Wichtig: Das Video muss einzeln geöffnet sein (im Feed auf die Video-Beschreibung klicken), sonst kennt der Browser die Video-Adresse nicht.
+Danach oben in Chrome das Symbol anpinnen (Puzzle-Symbol, dann die Pinnadel bei Syntracks) und einmalig im Popup anmelden.
+
+Wer den Ordner `chrome_extension` lieber von Hand lädt, schaltet unter `chrome://extensions` den **Entwicklermodus** ein und klickt auf **"Entpackte Erweiterung laden"**. Dieser Weg bekommt keine automatischen Updates.
 
 ## Links
 
 - Web-App: https://syntracks.xsyntachs.de
+- iPhone-Kurzbefehl: https://syntracks.xsyntachs.de/ios
 - APK-Download: https://syntracks.xsyntachs.de/app.apk
-- Extension-Download: https://syntracks.xsyntachs.de/extension.zip
+- Erweiterung im Chrome Web Store: https://chromewebstore.google.com/detail/hlecjdomfgbhajgeepojmobogolpcllg
 
 ## Dateien in diesem Ordner
 
-- `ANLEITUNG.md` — diese Anleitung
-- `syntracks.apk` — die Android-App zum Weitergeben
-- `chrome_extension/` — die Chrome-Erweiterung (entpackt, bereit zum Laden)
+- `ANLEITUNG.md`, diese Anleitung
+- `syntracks.apk`, die Android-App zum Weitergeben
+- `chrome_extension/`, die Chrome-Erweiterung (entpackt, bereit zum Laden)

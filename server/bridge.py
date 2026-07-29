@@ -55,10 +55,10 @@ def hash_pw(password, salt):
     return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 100_000).hex()
 
 
-# Jede Anmeldung ist eine eigene Sitzung, maximal 3 pro Konto (App, Web, Extension).
-# Eine vierte Anmeldung wirft die älteste Sitzung raus, Account-Sharing kickt also
-# immer jemanden und fällt sofort auf. Alte users.json-Einträge haben noch "token".
-MAX_SESSIONS = 3
+# Jede Anmeldung ist eine eigene Sitzung, die älteste fällt hinten raus. Der Wert ist
+# hoch, weil der Token im iPhone-Kurzbefehl fest verdrahtet ist und bei knapper Rotation
+# still ungültig würde. Alte users.json-Einträge haben noch "token".
+MAX_SESSIONS = 50
 
 
 def user_tokens(info):
@@ -729,6 +729,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/privacy":
             return self.reply(200, (BASE / "privacy.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8")
+        if path == "/ios":
+            return self.reply(200, (BASE / "ios.html").read_text(encoding="utf-8"),
+                              "text/html; charset=utf-8", no_store=True)
         if path == "/styles.css":
             return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"),
                               "text/css; charset=utf-8", no_store=True)
