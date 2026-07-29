@@ -1,36 +1,37 @@
 # Syntracks
 
-Merkt sich die Musik aus TikTok-Videos. Video teilen, der Server erkennt den Song (Shazam-Fingerprint mit Tempo-Korrektur für Slowed-Versionen, iTunes-Abgleich, Caption-Parsing) und die Sammlung ist überall verfügbar, als Android-App, im Browser und per Chrome-Erweiterung. Multi-User mit eigenen Konten.
+Finds the song behind a TikTok video and keeps it. Share a video, the server identifies the track (Shazam fingerprint with tempo correction for slowed versions, iTunes lookup, caption parsing) and your collection is available everywhere, as an Android app, in the browser and through a Chrome extension. Free accounts, open registration.
 
 ## Features
 
-- Song-Erkennung aus geteilten TikTok-Links, asynchron mit Fortschritts-Stufen
-- Erkennt auch Slowed/Sped-Up-Versionen (asetrate-Varianten gegen Pitch-Verschiebung)
-- Album-Cover und 30-s-Studio-Previews von iTunes/Shazam, Volllänge über YouTube
-- Ähnliche Songs entdecken (Deezer) und mit einem Tap in die eigene Liste übernehmen
-- Genre-Statistik ("Dein Geschmack"), Suche, Quellen-Filter
-- MP3- und MP4-Download
-- Wochen-Rückblick als Benachrichtigung (App)
-- Multi-User mit Registrierung, Admin-Konten-Verwaltung
+- Song identification from shared TikTok links, asynchronous with progress stages
+- Recognises slowed and sped up versions through pitch corrected resampling
+- Album art and 30 second studio previews from iTunes and Shazam
+- Discover similar tracks through Deezer and keep them with one tap
+- Genre statistics, search, source filters
+- Six interface languages, English, German, Spanish, French, Portuguese and Turkish
+- Light and dark theme
 
-## Aufbau
+## Layout
 
-| Ordner | Inhalt |
+| Folder | Contents |
 |---|---|
-| `app/` | Android-App, Kotlin + Jetpack Compose, keine Fremd-Dependencies außer Compose |
-| `server/` | Bridge-Server, eine Python-Datei (Stdlib + shazamio + yt-dlp), plus Web-UI (`index.html`) und systemd-Unit |
-| `setup/` | Weitergabe-Paket: Anleitung, fertige APK, Chrome-Erweiterung |
+| `app/` | Android app, Kotlin and Jetpack Compose, no third party dependencies beyond Compose |
+| `server/` | Bridge server, one Python file (stdlib plus shazamio and yt-dlp), the web interface and the systemd unit |
+| `setup/` | Handout package with the guide, the built APK and the Chrome extension |
 
 ## Setup
 
-Siehe [setup/ANLEITUNG.md](setup/ANLEITUNG.md) für App, Browser und Chrome-Erweiterung.
+See [setup/GUIDE.md](setup/GUIDE.md) for the app, the browser and the Chrome extension.
 
-Server-Betrieb: `server/bridge.py` braucht Python 3.11+, ein venv mit `shazamio`, dazu `yt-dlp` und `ffmpeg` im PATH. Läuft als systemd-Dienst hinter einem Reverse-Proxy mit TLS. Nutzerkonten liegen in `users.json`, Songs pro Nutzer als JSONL.
+Running the server, `server/bridge.py` needs Python 3.11 or newer, a virtual environment with `shazamio`, plus `yt-dlp` and `ffmpeg` on the PATH. It runs as a systemd service behind a TLS reverse proxy. Accounts live in `users.json`, songs are stored per user as JSONL.
 
-## Entwicklung
+All interface text comes from `server/i18n.json`. Adding a language means adding one code to every entry there and to the language list in `server/app.js`.
 
-Der Release-Keystore ist bewusst nicht im Repo.
+## Development
 
-## Lizenz
+The release keystore is deliberately not in the repository.
 
-Der Code ist öffentlich einsehbar, aber geschützt. Nutzung der fertigen App ist erlaubt, Kopieren, Weiterverwenden oder Selbst-Hosten des Codes nicht. Details in [LICENSE](LICENSE).
+## Licence
+
+The code is public but protected. Using the finished app is allowed, copying, reusing or self hosting the code is not. Details in [LICENSE](LICENSE).

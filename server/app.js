@@ -3,6 +3,11 @@ let token = localStorage.getItem("token");
 let userName = localStorage.getItem("user") || "";
 let isAdmin = false, mayDownload = false, songs = [], lastPending = [], filter = "ALL", view = "SONGS", registerMode = false;
 let playing = null, pollTimer = null;
+let page = 1;
+// Die Seitengröße folgt der Fensterhöhe, damit die Liste nie über den Bildschirm hinausläuft
+let perPage = 8, totalPages = 1;
+let refitting = false;
+const ROW_HEIGHT = 88;
 
 const LANGS = { en: "English", de: "Deutsch", es: "Español", fr: "Français", pt: "Português", tr: "Türkçe" };
 let LANG = localStorage.getItem("lang") || (navigator.language || "en").slice(0, 2).toLowerCase();
@@ -28,10 +33,6 @@ const IC = {
   note: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
 };
 
-const SOURCE_COLOR = {
-  TIKTOK: "rgba(254,44,85,.5)", SHAZAM: "rgba(120,40,200,.6)", CAPTION: "rgba(245,197,66,.45)",
-  SIMILAR: "rgba(76,217,100,.45)", ORIGINAL: "rgba(255,255,255,.18)",
-};
 const SOURCE_KEY = {
   TIKTOK: "src_official", SHAZAM: "src_shazam", CAPTION: "src_caption",
   SIMILAR: "src_recommendation", ORIGINAL: "src_unknown",
@@ -58,8 +59,15 @@ async function api(path, opts = {}) {
     doLogout();
     $("login-err").textContent = T("session_expired");
   }
-  if (!r.ok) throw new Error(await r.text());
+  if (!r.ok) throw new Error(await readError(r));
   return r;
+}
+
+async function readError(response) {
+  // Bei einem Neustart antwortet der Proxy mit einer HTML-Seite, die roh im Fehlerfeld landen würde
+  const text = (await response.text()).trim();
+  return !text || text.startsWith("<") || text.length > 200
+    ? `${T("server_error")} (${response.status})` : text;
 }
 
 function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
@@ -83,14 +91,24 @@ function applyStaticText() {
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = T(el.dataset.i18n));
   document.querySelectorAll("[data-ph]").forEach(el => el.placeholder = T(el.dataset.ph));
+  document.querySelectorAll("[data-tip]").forEach(el => el.dataset.tiptext = T(el.dataset.tip));
   $("lang-pick").innerHTML = Object.entries(LANGS).map(([code, label]) =>
     `<option value="${code}"${code === LANG ? " selected" : ""}>${label}</option>`).join("");
   $("lang-pick").onchange = () => switchLang($("lang-pick").value);
+  const theme = localStorage.getItem("theme") || "dark";
+  $("theme-pick").innerHTML = ["dark", "light", "system"].map(mode =>
+    `<option value="${mode}"${mode === theme ? " selected" : ""}>${T("theme_" + mode)}</option>`).join("");
+  $("theme-pick").onchange = () => applyTheme($("theme-pick").value);
 }
 
 function switchLang(code) {
   localStorage.setItem("lang", code);
   location.reload();
+}
+
+function applyTheme(mode) {
+  if (mode === "system") { localStorage.removeItem("theme"); delete document.documentElement.dataset.theme; }
+  else { localStorage.setItem("theme", mode); document.documentElement.dataset.theme = mode; }
 }
 
 /* ---------- Player ---------- */
@@ -153,7 +171,7 @@ async function load() {
     localStorage.setItem("user", userName);
     songs = data.songs;
     lastPending = data.pending;
-    $("whoami").textContent = "@" + userName;
+    $("whoami").textContent = `@${userName} · ${T("songs_count", { n: songs.length })}`;
     renderStats();
     render();
     schedulePoll();
@@ -179,13 +197,13 @@ function renderStats() {
     ev.stopPropagation();
     closeMenu();
     const items = Object.keys(FILTER_KEY).map(f =>
-      [T(FILTER_KEY[f]) + (f === filter ? "  ✓" : ""), () => { filter = f; renderStats(); render(); }]);
+      [T(FILTER_KEY[f]) + (f === filter ? "  ✓" : ""), () => { filter = f; page = 1; renderStats(); render(); }]);
     anchorMenu(buildMenu(items), filterBtn);
   };
   $("filters").innerHTML = Object.keys(VIEW_KEY).map(v =>
     `<span class="tab ${v === view ? "active" : ""}" data-v="${v}">${T(VIEW_KEY[v])}</span>`).join("");
   document.querySelectorAll("#filters .tab").forEach(el =>
-    el.onclick = () => { view = el.dataset.v; renderStats(); render(); });
+    el.onclick = () => { view = el.dataset.v; page = 1; renderStats(); render(); });
 }
 
 /* ---------- Empfehlungen ---------- */
@@ -200,6 +218,42 @@ async function loadRecs() {
 }
 
 /* ---------- Rendern ---------- */
+function fitPerPage() {
+  const list = $("list");
+  const card = list.querySelector(".card");
+  // Gemessen statt geschätzt, sonst wird die letzte Zeile angeschnitten
+  const rowHeight = card ? card.getBoundingClientRect().height + 8 : ROW_HEIGHT;
+  const next = Math.max(3, Math.floor(list.clientHeight / rowHeight));
+  const changed = next !== perPage;
+  perPage = next;
+  return changed;
+}
+
+function pagerHtml(total) {
+  const pages = Math.ceil(total / perPage);
+  if (pages < 2) return "";
+  // Bei vielen Seiten nur Anfang, Umgebung der aktuellen Seite und Ende zeigen
+  const wanted = new Set([1, pages, page, page - 1, page + 1]);
+  if (page <= 3) [2, 3, 4].forEach(n => wanted.add(n));
+  if (page >= pages - 2) [pages - 1, pages - 2, pages - 3].forEach(n => wanted.add(n));
+  const numbers = [...wanted].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
+  let html = `<div class="pager"><button data-page="${page - 1}"${page === 1 ? " disabled" : ""} aria-label="${T("page_prev")}">‹</button>`;
+  numbers.forEach((n, i) => {
+    if (i && n - numbers[i - 1] > 1) html += `<span class="gap">…</span>`;
+    html += `<button data-page="${n}" class="${n === page ? "on" : ""}">${n}</button>`;
+  });
+  html += `<button data-page="${page + 1}"${page === pages ? " disabled" : ""} aria-label="${T("page_next")}">›</button>`;
+  return html + `<input class="page-jump" id="page-jump" type="number" min="1" max="${pages}"
+                        inputmode="numeric" placeholder="${page}/${pages}" aria-label="${T("page_go")}"></div>`;
+}
+
+function goToPage(target, lastPage) {
+  const next = Math.min(Math.max(1, target), lastPage);
+  if (next === page) return;
+  page = next;
+  render();
+}
+
 function render() {
   const q = $("search").value.toLowerCase();
   const shown = view === "RECS" ? [] : songs.filter(s => {
@@ -240,7 +294,9 @@ function render() {
   if (!shown.length && !lastPending.length && view !== "RECS") {
     html += `<div class="sub" style="padding:56px 0;text-align:center;font-size:15px">${T("nothing_found")}</div>`;
   }
-  html += shown.map(s => {
+  const lastPage = Math.max(1, Math.ceil(shown.length / perPage));
+  if (page > lastPage) page = lastPage;
+  html += shown.slice((page - 1) * perPage, page * perPage).map(s => {
     const src = sourceOf(s);
     const idx = songs.indexOf(s);
     const isPlaying = playing && playing.clip === s.clip;
@@ -249,7 +305,7 @@ function render() {
         <div class="ply">${isPlaying ? IC.pause : IC.play}</div></div>
       <div class="meta">
         <b>${esc(s.name)}</b><span class="artist">${esc(s.artist)}</span>
-        <span class="badge-row"><span class="badge" style="background:${SOURCE_COLOR[src]}">${T(SOURCE_KEY[src])}</span>
+        <span class="badge-row"><span class="badge">${T(SOURCE_KEY[src])}</span>
         ${s.favorite ? `<span class="fav-star" title="${T("view_favorites")}">${IC.star}</span>` : ""}
         <span class="time">${relTime(s.saved_at)}</span></span>
       </div>
@@ -257,6 +313,20 @@ function render() {
     </div>`;
   }).join("");
   $("list").innerHTML = html;
+  $("pager").innerHTML = pagerHtml(shown.length);
+  if (!refitting && fitPerPage()) { refitting = true; render(); refitting = false; return; }
+  totalPages = Math.max(1, Math.ceil(shown.length / perPage));
+  document.querySelectorAll("[data-page]").forEach(el => el.onclick = () => goToPage(+el.dataset.page, totalPages));
+  const jump = $("page-jump");
+  if (jump) jump.oninput = () => {
+    const wanted = parseInt(jump.value, 10);
+    // Erst springen, wenn die Zahl im gültigen Bereich liegt, sonst zappelt es bei jeder Ziffer
+    if (!wanted || wanted < 1 || wanted > totalPages) return;
+    const keep = jump.value;
+    goToPage(wanted, totalPages);
+    const fresh = $("page-jump");
+    if (fresh) { fresh.value = keep; fresh.focus(); }
+  };
   document.querySelectorAll("[data-play]").forEach(el => el.onclick = () => {
     const s = songs[el.dataset.play];
     if (playing && playing.clip === s.clip) stopPlay(); else startPlay(s, false);
@@ -355,17 +425,27 @@ function openSongMenu(song, anchorEl) {
   anchorMenu(buildMenu(items), anchorEl);
 }
 
-$("profile").onclick = (ev) => {
-  ev.stopPropagation();
+function openProfileMenu() {
   closeMenu();
   const items = [
+    ["h", `@${userName} · ${T("songs_count", { n: songs.length })}`],
     [T("change_name"), openRename],
     [T("change_password"), openPassword],
     [T("language"), openLanguage],
+    [T("appearance"), openAppearance],
   ];
   if (isAdmin) items.push([T("manage_accounts"), openAdmin]);
   items.push([T("sign_out"), doLogout, "danger"]);
-  anchorMenu(buildMenu(items), $("profile"));
+  const menu = buildMenu(items);
+  anchorMenu(menu, $("profile"));
+  menu.onmouseenter = () => clearTimeout(menuTimer);
+  menu.onmouseleave = closeMenu;
+}
+let menuTimer = null;
+$("profile").onclick = (ev) => { ev.stopPropagation(); openProfileMenu(); };
+document.querySelector(".profile-wrap").onmouseenter = () => { clearTimeout(menuTimer); openProfileMenu(); };
+document.querySelector(".profile-wrap").onmouseleave = () => {
+  menuTimer = setTimeout(() => { if (!document.querySelector(".menu:hover")) closeMenu(); }, 220);
 };
 
 /* ---------- Overlays ---------- */
@@ -380,6 +460,16 @@ function modal(title, bodyHtml) {
   ov.querySelector(".close").onclick = close;
   $("overlays").appendChild(ov);
   return { el: ov, close };
+}
+
+function openAppearance() {
+  const current = localStorage.getItem("theme") || "dark";
+  const m = modal(T("appearance"), ["dark", "light", "system"].map(mode =>
+    `<button class="btn-ghost" data-theme-pick="${mode}" style="margin-bottom:8px">${T("theme_" + mode)}${mode === current ? "  ✓" : ""}</button>`).join(""));
+  m.el.querySelectorAll("[data-theme-pick]").forEach(el => el.onclick = () => {
+    applyTheme(el.dataset.themePick);
+    m.close();
+  });
 }
 
 function openLanguage() {
@@ -445,13 +535,13 @@ function openTaste() {
      </div>` +
     (sorted.length
       ? sorted.map(([g, c]) => `<div><div style="display:flex;font-size:13px;margin-bottom:5px">
-          <span style="flex:1">${esc(g)}</span><span style="color:var(--muted)">${c}</span></div>
+          <span style="flex:1">${esc(g)}</span><span style="color:var(--dim)">${c}</span></div>
           <div class="genrebar"><div style="width:${Math.round(c / max * 100)}%"></div></div></div>`).join("")
       : `<div class="sub">${T("no_genre_data")}</div>`) +
     `<b style="font-size:14px;margin-top:6px">${T("top_artists")}</b>` +
     tops.map(([a, c]) => `<div style="display:flex;font-size:13px">
       <span style="flex:1">${esc(a)}</span>
-      <span style="color:var(--muted)">${c === 1 ? T("one_song") : T("songs_count", { n: c })}</span></div>`).join(""));
+      <span style="color:var(--dim)">${c === 1 ? T("one_song") : T("songs_count", { n: c })}</span></div>`).join(""));
 }
 
 function openRename() {
@@ -497,7 +587,7 @@ async function openAdmin() {
     catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
     m.el.querySelector(".body").innerHTML = users.map(u => `<div class="adm-row">
       <div class="adm-av">${esc(u.name[0])}</div>
-      <div class="meta"><b style="color:${u.admin ? "var(--cyan)" : "inherit"}">@${esc(u.name)}${u.admin ? " · Admin" : ""}</b>
+      <div class="meta"><b style="color:${u.admin ? "var(--brand)" : "inherit"}">@${esc(u.name)}${u.admin ? " · Admin" : ""}</b>
         <span class="artist">${T("songs_count", { n: u.songs })}${u.downloads ? " · " + T("downloads_enabled") : ""}</span></div>
       <div class="adm-actions">
         <button class="adm-btn cyan" data-vu="${esc(u.name)}">${T("view_action")}</button>
@@ -545,12 +635,12 @@ async function openUserLibrary(name) {
   catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
   let recs = null, tab = "SONGS";
   const songRow = s => `<div class="mrow">
-    ${s.artwork ? `<img class="cover" src="${esc(s.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
+    ${s.artwork ? `<img class="cover" src="${esc(s.artwork)}">` : `<div class="cover" ></div>`}
     <div class="meta"><b>${esc(s.name)}${s.favorite ? ` <span style="color:var(--gold)">★</span>` : ""}</b>
       <span class="artist">${esc(s.artist || T("unknown_artist"))} · ${T(SOURCE_KEY[sourceOf(s)])}</span></div>
   </div>`;
   const recRow = t => `<div class="mrow">
-    ${t.artwork ? `<img class="cover" src="${esc(t.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
+    ${t.artwork ? `<img class="cover" src="${esc(t.artwork)}">` : `<div class="cover" ></div>`}
     <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist || T("unknown_artist"))}</span></div>
   </div>`;
   async function renderLib() {
@@ -578,12 +668,16 @@ async function openUserLibrary(name) {
 async function doAuth() {
   $("login-err").textContent = "";
   try {
+    if (registerMode && $("pass").value !== $("pass2").value) {
+      $("login-err").textContent = T("passwords_mismatch");
+      return;
+    }
     const r = await fetch(registerMode ? "/register" : "/login", {
       method: "POST",
       headers: { "Accept-Language": LANG },
       body: JSON.stringify({ user: $("user").value.trim(), pass: $("pass").value }),
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!r.ok) throw new Error(await readError(r));
     const data = await r.json();
     token = data.token; userName = data.user;
     localStorage.setItem("token", token); localStorage.setItem("user", userName);
@@ -603,10 +697,31 @@ function setRegisterMode(on) {
   $("login-mode").textContent = registerMode ? T("create_account") : T("sign_in");
   $("login-btn").textContent = registerMode ? T("create_account") : T("sign_in");
   $("toggle-register").textContent = registerMode ? T("already_account") : T("new_here");
+  $("pass2").classList.toggle("hidden", !registerMode);
+  $("pass").autocomplete = registerMode ? "new-password" : "current-password";
 }
 $("toggle-register").onclick = () => setRegisterMode(!registerMode);
-$("search").addEventListener("input", render);
+$("search").addEventListener("input", () => { page = 1; render(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
+addEventListener("resize", () => { if (fitPerPage()) render(); });
+
+// In der Liste blättert das Rad die Seiten weiter, gescrollt wird hier nichts
+let wheelLock = 0;
+$("list").addEventListener("wheel", (ev) => {
+  ev.preventDefault();
+  if (Date.now() < wheelLock || Math.abs(ev.deltaY) < 4) return;
+  wheelLock = Date.now() + 220;
+  goToPage(page + (ev.deltaY > 0 ? 1 : -1), totalPages);
+}, { passive: false });
+
+let touchStartY = null;
+$("list").addEventListener("touchstart", (ev) => { touchStartY = ev.touches[0].clientY; }, { passive: true });
+$("list").addEventListener("touchend", (ev) => {
+  if (touchStartY === null) return;
+  const moved = touchStartY - ev.changedTouches[0].clientY;
+  touchStartY = null;
+  if (Math.abs(moved) > 60) goToPage(page + (moved > 0 ? 1 : -1), totalPages);
+}, { passive: true });
 
 async function boot() {
   try { I18N = await (await fetch("/i18n.json")).json(); } catch (e) { I18N = {}; }
@@ -619,6 +734,6 @@ async function boot() {
     <li>${T("howto_iphone")}</li>
     <li>${T("howto_collection")}</li>
   </ol>`);
-  if (token) { show(true); load(); } else { show(false); }
+  if (token) { show(true); fitPerPage(); load(); } else { show(false); }
 }
 boot();

@@ -7,29 +7,37 @@
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=50">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css?v=60">
+<script>
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
+</script>
 <style>
-  html, body { height: auto; overflow: auto; }
-  .wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 80px; }
-  h1 { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 26px; margin: 0 0 8px; }
-  h2 { font-size: 18px; margin: 38px 0 12px; }
-  p { color: var(--muted); line-height: 1.6; }
-  ol { line-height: 1.7; padding-left: 0; list-style: none; counter-reset: schritt; margin: 0; }
-  ol li { margin-bottom: 18px; padding-left: 40px; position: relative; }
+  html, body { height: auto; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 0 0 64px; }
+  .banner { background: var(--brand); color: #121212; padding: 13px 16px; }
+  .banner h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 27px;
+               letter-spacing: -.035em; line-height: 1; }
+  .banner p { color: #121212; opacity: .82; font-size: 13px; margin-top: 5px; line-height: 1.45; }
+  .inner { padding: 0 16px; }
+  h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; font-weight: 700;
+       letter-spacing: -.02em; margin: 32px 0 12px; }
+  p { color: var(--dim); line-height: 1.6; }
+  ol { line-height: 1.65; padding-left: 0; list-style: none; counter-reset: schritt; margin: 0; }
+  ol li { margin-bottom: 18px; padding-left: 38px; position: relative; }
   ol li::before {
     counter-increment: schritt;
     content: counter(schritt);
-    position: absolute; left: 0; top: 0;
-    width: 27px; height: 27px; border-radius: 50%;
+    position: absolute; left: 0; top: 1px;
+    width: 26px; height: 26px; border-radius: 3px;
     display: grid; place-items: center;
-    background: rgba(254,44,85,.16); color: var(--pink);
-    font-size: 13px; font-weight: 700;
+    background: var(--brand); color: #121212;
+    font-size: 12px; font-weight: 700;
   }
   code {
-    background: rgba(0,0,0,.4);
-    border: 1px solid var(--border);
-    padding: 2px 7px; border-radius: 7px;
+    border: 2px solid var(--line);
+    padding: 3px 7px; border-radius: 3px;
     font-family: ui-monospace, monospace; font-size: 13px;
     white-space: nowrap; display: inline-block;
   }
@@ -37,32 +45,30 @@
   .code-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
   .code-row code { flex: 1; min-width: 170px; }
   .mini-copy {
-    border: 1px solid rgba(254,44,85,.45);
-    background: rgba(254,44,85,.12);
-    color: var(--pink);
-    border-radius: var(--r-pill); padding: 6px 14px;
-    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; background: var(--btn-bg); color: var(--btn-ink);
+    border-radius: var(--r); padding: 10px 16px; min-height: 44px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
     white-space: nowrap; flex: none;
   }
-  .mini-copy:active { background: rgba(254,44,85,.25); }
-  .mini-copy[disabled] { opacity: .5; cursor: default; border-style: dashed; }
-  .box { border: 1px solid var(--border); background: var(--glass);
-         border-radius: var(--r-card); padding: 16px 18px; margin: 16px 0; }
+  .mini-copy[disabled] { background: var(--line); color: var(--dim); cursor: default; }
+  .box { border: 2px solid var(--line); border-radius: var(--r); padding: 14px 16px; margin: 16px 0; }
   .box input { margin-bottom: 8px; }
-  .step { color: var(--pink); font-weight: 600; }
+  .step { font-weight: 700; color: var(--ink); }
   dl { margin: 0; }
-  dt { font-weight: 600; margin-top: 16px; }
-  dd { margin: 4px 0 0; color: var(--muted); line-height: 1.6; }
+  dt { font-weight: 700; margin-top: 18px; }
+  dd { margin: 4px 0 0; color: var(--dim); line-height: 1.6; }
   #angemeldet { display: none; }
 </style>
 </head>
 <body>
-<div class="aurora"></div>
 <div class="wrap">
-  <h1 class="display">Syntracks aufs iPhone</h1>
-  <p>Am Ende steht Syntracks im Teilen-Men&uuml; von TikTok. Du tippst auf Teilen, w&auml;hlst Syntracks,
-     und der Song landet in deiner Sammlung. Dauert zwei Minuten und kostet nichts.</p>
+  <div class="banner">
+    <h1>Syntracks aufs iPhone</h1>
+    <p>Am Ende steht Syntracks im Teilen-Men&uuml; von TikTok. Du tippst auf Teilen, w&auml;hlst Syntracks,
+       und der Song landet in deiner Sammlung. Dauert zwei Minuten und kostet nichts.</p>
+  </div>
 
+  <div class="inner">
   <div class="box" id="login-box">
     <b>Melde dich an</b>
     <p style="margin:6px 0 12px">Danach zeigt dir diese Seite deinen Zugangscode f&uuml;r Schritt 6.</p>
@@ -148,7 +154,8 @@
         er dauerhaft g&uuml;ltig.</dd>
   </dl>
 
-  <p style="margin-top:34px"><a href="/" style="color:var(--cyan)">Zur&uuml;ck zur Sammlung</a></p>
+  <p style="margin-top:34px"><a href="/" style="color:var(--ink);font-weight:600">Zur&uuml;ck zur Sammlung</a></p>
+  </div>
 </div>
 
 <script>
