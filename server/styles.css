@@ -86,12 +86,19 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 /* Login */
 #login { min-height: 100dvh; display: flex; flex-direction: column; }
 .login-body { flex: 1; display: flex; align-items: center; justify-content: center;
-              padding: var(--s4) 14px; overflow-y: auto; }
-.login-box { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--s2);
-             margin: auto; }
+              padding: var(--s3) 14px; overflow-y: auto; }
+.login-box { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--s3); margin: auto; }
+.login-form, .login-extras { display: flex; flex-direction: column; gap: var(--s1); }
+/* Ab Tablet stehen Anmeldung und Downloads nebeneinander, sonst klafft die Fläche */
+@media (min-width: 780px) {
+  .login-box { width: min(820px, 100%); flex-direction: row; align-items: flex-start; gap: var(--s4); }
+  .login-form, .login-extras { flex: 1; }
+  .login-extras .tiles { margin-top: 0; padding-top: 0; border-top: none; }
+}
 .sub { color: var(--dim); font-size: 13px; }
 .masthead .sub { color: #121212; opacity: .78; margin-top: 5px; }
-.err { color: var(--danger); font-size: 13px; min-height: 18px; font-weight: 500; }
+.err { color: var(--danger); font-size: 13px; font-weight: 500; margin: 2px 0; }
+.err:empty { display: none; }
 .tiles { margin-top: var(--s3); padding-top: var(--s3); border-top: 2px solid var(--line);
          display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;

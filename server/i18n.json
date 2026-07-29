@@ -591,6 +591,10 @@
     "pt": "Baixar",
     "tr": "İndir"
   },
+  "group_apps": {
+    "en": "Apps and extensions", "de": "Apps und Erweiterungen", "es": "Apps y extensiones",
+    "fr": "Applications et extensions", "pt": "Apps e extensões", "tr": "Uygulamalar ve uzantılar"
+  },
   "group_share": {
     "en": "Share",
     "de": "Teilen",

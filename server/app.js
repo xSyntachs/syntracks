@@ -434,6 +434,11 @@ function openProfileMenu() {
     [T("language"), openLanguage],
     [T("appearance"), openAppearance],
   ];
+  items.push(["h", T("group_apps")]);
+  items.push([T("download_android"), () => location.assign("/app.apk")]);
+  items.push([T("browser_extension"), () =>
+    window.open("https://chromewebstore.google.com/detail/hlecjdomfgbhajgeepojmobogolpcllg", "_blank")]);
+  items.push([T("iphone_shortcut"), () => location.assign("/ios")]);
   if (isAdmin) items.push([T("manage_accounts"), openAdmin]);
   items.push([T("sign_out"), doLogout, "danger"]);
   const menu = buildMenu(items);
@@ -710,7 +715,7 @@ let wheelLock = 0;
 $("list").addEventListener("wheel", (ev) => {
   ev.preventDefault();
   if (Date.now() < wheelLock || Math.abs(ev.deltaY) < 4) return;
-  wheelLock = Date.now() + 220;
+  wheelLock = Date.now() + 130;
   goToPage(page + (ev.deltaY > 0 ? 1 : -1), totalPages);
 }, { passive: false });
 
