@@ -4,6 +4,7 @@
 
   const BRAND = "#E9E64A";
   const INK = "#121212";
+  const T = (key) => chrome.i18n.getMessage(key) || key;
 
   const NOTE_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="${INK}"
   stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -21,7 +22,7 @@
       const link = document.createElement("a");
       link.href = "https://syntracks.app";
       link.target = "_blank";
-      link.textContent = "Sammlung öffnen";
+      link.textContent = T("open_collection");
       link.style.cssText = `color:${BRAND};margin-left:10px;font-weight:700;text-decoration:underline;
       text-underline-offset:3px`;
       toast.appendChild(link);
@@ -43,31 +44,31 @@
 
   function saveVideo(button) {
     if (!chrome.runtime?.id) {
-      showToast("Erweiterung wurde erneuert, lade die Seite neu.");
+      showToast(T("reload_page"));
       return;
     }
     const url = videoUrlFor(button);
     if (!url) {
-      showToast("Video-Adresse nicht gefunden, öffne das Video einzeln.");
+      showToast(T("address_not_found"));
       return;
     }
-    showToast("Video wird gespeichert…");
+    showToast(T("saving_video"));
     try {
       chrome.runtime.sendMessage({ type: "save", url }, (answer) => {
         if (chrome.runtime.lastError || !answer) {
-          showToast("Erweiterung wurde erneuert, lade die Seite neu.");
+          showToast(T("reload_page"));
           return;
         }
         showToast(answer.text, answer.ok);
       });
     } catch {
-      showToast("Erweiterung wurde erneuert, lade die Seite neu.");
+      showToast(T("reload_page"));
     }
   }
 
   function saveButton(size) {
     const btn = document.createElement("button");
-    btn.title = "Song speichern (Syntracks)";
+    btn.title = `${T("save_song")} (Syntracks)`;
     btn.style.cssText = `width:${size}px;height:${size}px;border:none;border-radius:5px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;flex:none;background:${BRAND}`;
     const glyph = Math.round(size * 0.46);
@@ -85,7 +86,7 @@
       const btn = saveButton(48);
       btn.onclick = (e) => { e.stopPropagation(); saveVideo(btn); };
       const label = document.createElement("span");
-      label.textContent = "Song speichern";
+      label.textContent = T("save_song");
       label.style.cssText = `font:700 11px/1.15 'Space Grotesk',system-ui,sans-serif;
       color:rgba(255,255,255,.9);text-align:center;max-width:56px`;
       holder.appendChild(btn);

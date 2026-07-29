@@ -31,7 +31,7 @@ class WeeklyDigestReceiver : BroadcastReceiver() {
         if (week.isEmpty()) return
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel("digest", "Wochen-Rückblick", NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel("digest", context.getString(R.string.digest_channel), NotificationManager.IMPORTANCE_DEFAULT)
         )
         val style = Notification.InboxStyle()
         week.take(5).forEach { style.addLine("${it.optString("artist")} - ${it.optString("name")}") }
@@ -39,7 +39,7 @@ class WeeklyDigestReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         manager.notify(3, Notification.Builder(context, "digest")
             .setSmallIcon(R.drawable.ic_note)
-            .setContentTitle("Deine Woche")
+            .setContentTitle(context.getString(R.string.digest_title))
             .setContentText("${week.size} neue Songs gesammelt")
             .setStyle(style)
             .setContentIntent(open)

@@ -1,0 +1,74 @@
+{
+  "sign_in": {
+    "message": "Giriş yap"
+  },
+  "sign_out": {
+    "message": "Çıkış yap"
+  },
+  "create_account": {
+    "message": "Hesap oluştur"
+  },
+  "new_here": {
+    "message": "Yeni misin? Hesap oluştur"
+  },
+  "already_account": {
+    "message": "Hesabın var mı? Giriş yap"
+  },
+  "username": {
+    "message": "Kullanıcı adı"
+  },
+  "password": {
+    "message": "Şifre"
+  },
+  "passwords_mismatch": {
+    "message": "Şifreler eşleşmiyor"
+  },
+  "not_signed_in": {
+    "message": "Giriş yapılmadı"
+  },
+  "server_unreachable": {
+    "message": "Sunucuya ulaşılamıyor."
+  },
+  "save_failed": {
+    "message": "Kaydetme başarısız"
+  },
+  "ext_name": {
+    "message": "Syntracks"
+  },
+  "ext_description": {
+    "message": "Açık olan TikTok videosundaki müziği Syntracks koleksiyonuna kaydeder."
+  },
+  "confirm_pw": {
+    "message": "Şifreyi onayla"
+  },
+  "save_song": {
+    "message": "Şarkıyı kaydet"
+  },
+  "save_current_video": {
+    "message": "Geçerli videoyu kaydet"
+  },
+  "open_web_app": {
+    "message": "Web uygulamasını aç"
+  },
+  "open_collection": {
+    "message": "Koleksiyonu aç"
+  },
+  "no_tiktok_tab": {
+    "message": "Açık TikTok sekmesi yok"
+  },
+  "open_video_alone": {
+    "message": "Videoyu tek başına aç (akışta açıklamasına tıkla), yoksa tarayıcı video adresini bilmez."
+  },
+  "address_not_found": {
+    "message": "Video adresi bulunamadı, videoyu tek başına aç."
+  },
+  "saving_video": {
+    "message": "Video kaydediliyor…"
+  },
+  "reload_page": {
+    "message": "Uzantı güncellendi, sayfayı yeniden yükle."
+  },
+  "sign_in_first": {
+    "message": "Giriş yapılmadı. Yukarıdaki Syntracks simgesine tıkla ve giriş yap."
+  }
+}

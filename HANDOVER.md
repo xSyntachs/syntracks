@@ -1,56 +1,54 @@
-# Session-Prompt Syntracks
+# Session prompt for Syntracks
 
-Der Block unten ist zum Kopieren in eine neue Session.
+Copy the block below into a new session.
 
 ---
 
-Projekt Syntracks in `C:\Users\lrumk\tiktok-song-app`. Findet den Song aus geteilten
-TikToks. Server erkennt per yt-dlp, Shazam und iTunes. Vier Oberflächen: Web, Android,
-Chrome-Erweiterung, iPhone-Kurzbefehl.
+Project Syntracks in `C:\Users\lrumk\tiktok-song-app`. It finds the song behind a shared
+TikTok. The server identifies it with yt-dlp, Shazam and iTunes. Four surfaces: web,
+Android, Chrome extension, iPhone shortcut.
 
-**Aufgabe.** `app/src/main/java/de/xsyntachs/tiktoksongs/MainActivity.kt` hat 1700 Zeilen und
-enthält alles. Teile sie auf, ohne Verhalten zu ändern. Vorschlag: `Theme.kt` für Farben,
-Formen und `AuroraBackground`, `SongList.kt` für Liste, `Pager`, `SongCard` und `PendingCard`,
-`Overlays.kt` für Dialoge und `OverlayFrame`, `Admin.kt` für die Kontenverwaltung. Nach jedem
-Schnitt bauen und auf dem Handy prüfen, nicht am Ende alles auf einmal.
+**Infrastructure.**
+- Server `root@ssh.xsyntachs.de`, code in `/opt/tiktok-bridge/`, systemd unit
+  `tiktok-bridge`, listening on 127.0.0.1:8737. Deploy by hand over scp, then
+  `chown scp:scp` and `systemctl restart tiktok-bridge`. SSH key `~/.ssh/id_ed25519`.
+- Public as **https://syntracks.app** behind the Cloudflare proxy on 37.44.215.95, host
+  entry in the Nginx Proxy Manager at proxy.xsyntachs.de. The old address
+  syntracks.xsyntachs.de stays alive and must not be switched off, every iPhone shortcut
+  has it baked in.
+- Repo `github.com/xSyntachs/syntracks`, branch main. The pipeline builds on changes under
+  `app/**` or `setup/chrome_extension/**`, versionCode is `200 + run number`. Server
+  deploys stay manual.
+- Google and Discord credentials live in `/opt/tiktok-bridge/oauth.json`, chmod 600, never
+  in the repo. The Discord secret still needs rotating.
 
-**Infrastruktur.**
-- Server `root@ssh.xsyntachs.de`, Code in `/opt/tiktok-bridge/`, systemd-Dienst
-  `tiktok-bridge`, lauscht auf 127.0.0.1:8737. Deploy von Hand per scp, danach
-  `chown scp:scp` und `systemctl restart tiktok-bridge`. SSH-Key `~/.ssh/id_ed25519`.
-- Öffentlich als **https://syntracks.app** über Cloudflare-Proxy auf 37.44.215.95, Host im
-  Nginx Proxy Manager unter proxy.xsyntachs.de. Die alte Adresse syntracks.xsyntachs.de läuft
-  weiter und darf nicht abgeschaltet werden, in jedem iPhone-Kurzbefehl steht sie fest drin.
-- Repo `github.com/xSyntachs/syntracks`, Branch main. Die Pipeline baut bei Änderungen an
-  `app/**` oder `setup/chrome_extension/**`, versionCode ist `200 + Laufnummer`.
-  Server-Deploys laufen weiter von Hand.
-- Zugangsdaten für Google und Discord in `/opt/tiktok-bridge/oauth.json`, chmod 600, nicht im
-  Repo. Der Discord-Schlüssel muss noch rotiert werden.
+**State.** Registration is open, the invite system is gone. Fifty songs per account per
+day, five signups per hour and IP, three workers behind a serial Shazam gate, the cache is
+swept after 14 days. Every server and web string comes from `server/i18n.json`, six
+languages (en, de, es, fr, pt, tr). All surfaces carry the mixtape design, yellow masthead
+`#E9E64A`, base `#121212`, rows `#1E1E1B`, lines `#2A2A26`, flat surfaces, 5px corners,
+Bricolage Grotesque and Space Grotesk, light and dark. Google and Discord sign-in work.
+Full-length downloads answer 403 unless the account carries the `downloads` flag. The code
+holds no comments, that is deliberate.
 
-**Stand.** Registrierung ist offen, das Invite-System ist entfernt. Tageslimit 50 Songs pro
-Konto, fünf Neuanmeldungen pro Stunde und IP, drei Worker mit serieller Shazam-Drossel, Cache
-wird nach 14 Tagen geräumt. Alle Texte von Server und Web kommen aus `server/i18n.json`, 197
-Einträge in Englisch, Deutsch, Spanisch, Französisch, Portugiesisch, Türkisch. Web und iPhone
-tragen das Mixtape-Design, gelber Kopf `#E9E64A`, Grund `#121212`, Zeilen `#1E1E1B`, Linien
-`#2A2A26`, flache Flächen, 5px Ecken, Bricolage Grotesque und Space Grotesk, hell und dunkel.
-Anmeldung über Google und Discord läuft. Volllängen-Downloads antworten mit 403, solange das
-Konto kein `downloads`-Flag hat. Im Code stehen keine Kommentare, das ist so gewollt.
+The Android app is split across `MainActivity.kt`, `Theme.kt`, `SongList.kt`, `Overlays.kt`
+and `Admin.kt`. Pages turn by swiping, the numbered pager stays in sync. The Chrome
+extension carries the mixtape design and reads the video id from the most visible item, so
+it works inside the feed where the address bar holds no video address.
 
-Die Android-App hat bereits neues Icon, gelben Kopf, flache Farben, Seitenblättern statt
-Scrollen und flache Badges. Sie ist noch komplett deutsch, während Web und iPhone sechs
-Sprachen können. Die Chrome-Erweiterung trägt noch das alte Design.
-
-**Fallstricke, alle heute real aufgetreten.**
-- Gradle liefert aus dem Cache und meldet trotzdem Erfolg. Bei Zweifel `--rerun-tasks`.
-- `adb install` scheitert still, wenn der versionCode unter dem installierten liegt. Auf dem
-  Handy liegt gerade Testversion 1005, für lokale Tests also höher zählen.
-- Cloudflare erfindet vier Stunden Cache, wenn eine Antwort kein `no-store` trägt.
-- Bei Änderungen an mehreren Stellen einer Kotlin-Datei nicht mit Skripten arbeiten, das hat
-  zweimal die Klammerbilanz gerissen. Direkt editieren.
-- Das Handy hängt per WLAN-ADB auf `192.168.0.111:39773`, gekoppelt. Screenshots mit
+**Traps, all of them hit for real.**
+- Gradle serves from cache and still reports success. When in doubt, `--rerun-tasks`.
+- `adb install` fails silently when the versionCode sits below the installed one. The phone
+  currently holds test version 1018, count higher for local tests.
+- Cloudflare invents four hours of cache whenever a response carries no `no-store`.
+- Do not script edits across several places in a Kotlin file, that broke the brace balance
+  twice. Edit directly.
+- The phone hangs on wireless ADB at `192.168.0.111:39773`, already paired. Screenshots via
   `adb -s 192.168.0.111:39773 exec-out screencap -p`.
+- Bump the `?v=` number in `index.html` and `ios.html` on every web deploy, otherwise
+  Cloudflare keeps serving the old assets.
 
-Bauen: `VERSION_CODE=1010 VERSION_NAME="6.5-t9" "C:\Users\lrumk\.gradle\wrapper\dists\gradle-8.14.1-bin\baw1sv0jfoi8rxs14qo3h49cs\gradle-8.14.1\bin\gradle.bat" assembleRelease`
+Build: `VERSION_CODE=1019 VERSION_NAME="6.5-t19" "C:\Users\lrumk\.gradle\wrapper\dists\gradle-8.14.1-bin\baw1sv0jfoi8rxs14qo3h49cs\gradle-8.14.1\bin\gradle.bat" assembleRelease`
 
-**Danach offen.** App auf sechs Sprachen, Erweiterung aufs neue Design, TikTok-Kanal nach
-`marketing/tiktok.md`, Discord-Secret rotieren.
+**Still open.** TikTok channel following `marketing/tiktok.md`, rotate the Discord secret,
+Spotify playlist export.

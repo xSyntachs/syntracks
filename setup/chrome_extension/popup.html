@@ -66,23 +66,23 @@
 <body>
   <header class="masthead">
     <h1>Syntracks</h1>
-    <div class="sub" id="who">Nicht angemeldet</div>
+    <div class="sub" id="who" data-i18n="not_signed_in"></div>
   </header>
 
   <div class="pad">
     <form id="login">
-      <input type="text" id="user" placeholder="Benutzername" autocomplete="off"
+      <input type="text" id="user" data-ph="username" autocomplete="off"
              autocapitalize="off" spellcheck="false">
-      <input type="password" id="pass" placeholder="Passwort" autocomplete="off">
-      <input type="password" id="pass2" placeholder="Passwort best&auml;tigen" autocomplete="off" class="hidden">
-      <button class="btn-primary" id="login-btn">Anmelden</button>
-      <button class="link-btn" type="button" id="toggle-register">Neu hier? Konto erstellen</button>
+      <input type="password" id="pass" data-ph="password" autocomplete="off">
+      <input type="password" id="pass2" data-ph="confirm_pw" autocomplete="off" class="hidden">
+      <button class="btn-primary" id="login-btn" data-i18n="sign_in"></button>
+      <button class="link-btn" type="button" id="toggle-register" data-i18n="new_here"></button>
     </form>
 
     <div id="main" class="hidden">
-      <button class="btn-primary" id="save-btn">Aktuelles Video speichern</button>
-      <button class="btn-ghost" id="open-web">Web-App &ouml;ffnen</button>
-      <button class="btn-ghost" id="logout">Abmelden</button>
+      <button class="btn-primary" id="save-btn" data-i18n="save_current_video"></button>
+      <button class="btn-ghost" id="open-web" data-i18n="open_web_app"></button>
+      <button class="btn-ghost" id="logout" data-i18n="sign_out"></button>
     </div>
 
     <div class="msg" id="msg" role="alert"></div>

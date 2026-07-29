@@ -1,0 +1,74 @@
+{
+  "sign_in": {
+    "message": "Iniciar sesión"
+  },
+  "sign_out": {
+    "message": "Cerrar sesión"
+  },
+  "create_account": {
+    "message": "Crear cuenta"
+  },
+  "new_here": {
+    "message": "¿Nuevo por aquí? Crea una cuenta"
+  },
+  "already_account": {
+    "message": "¿Ya tienes cuenta? Inicia sesión"
+  },
+  "username": {
+    "message": "Nombre de usuario"
+  },
+  "password": {
+    "message": "Contraseña"
+  },
+  "passwords_mismatch": {
+    "message": "Las contraseñas no coinciden"
+  },
+  "not_signed_in": {
+    "message": "No has iniciado sesión"
+  },
+  "server_unreachable": {
+    "message": "Servidor no disponible."
+  },
+  "save_failed": {
+    "message": "Error al guardar"
+  },
+  "ext_name": {
+    "message": "Syntracks"
+  },
+  "ext_description": {
+    "message": "Guarda la música del vídeo de TikTok que estás viendo en tu colección de Syntracks."
+  },
+  "confirm_pw": {
+    "message": "Confirmar contraseña"
+  },
+  "save_song": {
+    "message": "Guardar canción"
+  },
+  "save_current_video": {
+    "message": "Guardar el vídeo actual"
+  },
+  "open_web_app": {
+    "message": "Abrir la app web"
+  },
+  "open_collection": {
+    "message": "Abrir colección"
+  },
+  "no_tiktok_tab": {
+    "message": "No hay ninguna pestaña de TikTok abierta"
+  },
+  "open_video_alone": {
+    "message": "Abre el vídeo por separado (haz clic en su descripción en el feed), si no el navegador no conoce la dirección del vídeo."
+  },
+  "address_not_found": {
+    "message": "No se encontró la dirección del vídeo, ábrelo por separado."
+  },
+  "saving_video": {
+    "message": "Guardando el vídeo…"
+  },
+  "reload_page": {
+    "message": "La extensión se actualizó, recarga la página."
+  },
+  "sign_in_first": {
+    "message": "No has iniciado sesión. Haz clic en el icono de Syntracks arriba e inicia sesión."
+  }
+}

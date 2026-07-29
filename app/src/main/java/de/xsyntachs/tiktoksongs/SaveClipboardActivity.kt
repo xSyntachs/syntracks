@@ -17,7 +17,7 @@ class SaveClipboardActivity : Activity() {
         val clip = getSystemService(ClipboardManager::class.java)
             .primaryClip?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
         if (!clip.contains("tiktok", ignoreCase = true)) {
-            Toast.makeText(this, "Kein TikTok-Link in der Zwischenablage", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.no_clipboard_link), Toast.LENGTH_LONG).show()
             finish()
             return
         }

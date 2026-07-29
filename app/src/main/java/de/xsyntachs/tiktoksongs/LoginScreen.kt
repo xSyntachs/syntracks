@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -59,7 +60,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp).height(92.dp),
             )
             Text("Syntracks", fontSize = 26.sp, fontWeight = FontWeight.Black, color = Scheme.onBackground)
-            Text(if (register) "Konto erstellen" else "Anmelden",
+            Text(if (register) stringResource(R.string.create_account) else stringResource(R.string.sign_in),
                 fontSize = 14.sp, color = Scheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 24.dp))
 
@@ -70,7 +71,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it.trim(); error = null },
-                label = { Text("Benutzername") },
+                label = { Text(stringResource(R.string.username)) },
                 singleLine = true,
                 shape = RoundedCornerShape(5.dp),
                 colors = fieldColors,
@@ -79,7 +80,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it; error = null },
-                label = { Text("Passwort") },
+                label = { Text(stringResource(R.string.password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions.Default,
@@ -113,21 +114,21 @@ fun LoginScreen(onSuccess: () -> Unit) {
                             }
                             busy = false
                             result.onSuccess { onSuccess() }
-                                .onFailure { error = it.message ?: "Fehlgeschlagen" }
+                                .onFailure { error = it.message ?: context.getString(R.string.failed) }
                         }
                     },
                 contentAlignment = Alignment.Center,
             ) {
                 if (busy) CircularProgressIndicator(Modifier.padding(2.dp), color = Color.White, strokeWidth = 2.dp)
                 else Text(
-                    if (register) "Konto erstellen" else "Anmelden",
+                    if (register) stringResource(R.string.create_account) else stringResource(R.string.sign_in),
                     fontWeight = FontWeight.Bold,
                     color = if (ready) Color.White else Scheme.onSurfaceVariant,
                 )
             }
             TextButton(onClick = { register = !register; error = null }) {
                 Text(
-                    if (register) "Schon ein Konto? Anmelden" else "Neu hier? Konto erstellen",
+                    if (register) stringResource(R.string.already_account) else stringResource(R.string.new_here),
                     color = Cyan,
                 )
             }

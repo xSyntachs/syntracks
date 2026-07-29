@@ -70,6 +70,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,12 +99,12 @@ data class Song(
     val favorite: Boolean,
     val source: Source,
 ) {
-    enum class Source(val label: String, val filter: String) {
-        TIKTOK("Offizieller Song", "Offiziell"),
-        SHAZAM("Per Shazam erkannt", "Shazam"),
-        CAPTION("Aus Caption gelesen", "Aus Caption"),
-        SIMILAR("Empfehlung", "Empfehlungen"),
-        ORIGINAL("Nicht erkannt", "Original"),
+    enum class Source(val label: Int, val filter: Int) {
+        TIKTOK(R.string.src_official, R.string.filter_official),
+        SHAZAM(R.string.src_shazam, R.string.filter_shazam),
+        CAPTION(R.string.src_caption, R.string.filter_caption),
+        SIMILAR(R.string.src_recommendation, R.string.view_recommendations),
+        ORIGINAL(R.string.src_unknown, R.string.filter_original),
     }
 }
 
@@ -120,8 +121,8 @@ fun parseSimilar(raw: String, key: String = "similar"): List<SimilarTrack> {
     return (0 until tracks.length()).map { i ->
         val t = tracks.getJSONObject(i)
         SimilarTrack(
-            track = t.optString("track", "Unbekannt"),
-            artist = t.optString("artist", "Unbekannt"),
+            track = t.optString("track"),
+            artist = t.optString("artist"),
             preview = t.optString("preview").takeIf { it.isNotBlank() && it != "null" },
             artwork = t.optString("artwork").takeIf { it.isNotBlank() && it != "null" },
             url = t.optString("url").takeIf { it.isNotBlank() && it != "null" },
@@ -143,8 +144,8 @@ fun parseFeed(raw: String): Feed {
             val s = songs.getJSONObject(i)
             Song(
                 savedAt = s.getString("saved_at"),
-                name = s.optString("name", "Unbekannt"),
-                artist = s.optString("artist", "Unbekannt"),
+                name = s.optString("name"),
+                artist = s.optString("artist"),
                 url = s.getString("url"),
                 clip = s.optString("clip"),
                 artwork = s.optString("artwork").takeIf { it.isNotBlank() && it != "null" },
@@ -307,7 +308,7 @@ class MainActivity : ComponentActivity() {
 
     private fun publishShareShortcut() {
         val shortcut = android.content.pm.ShortcutInfo.Builder(this, "save-song")
-            .setShortLabel("Song speichern")
+            .setShortLabel(getString(R.string.save_song))
             .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher))
             .setCategories(setOf("de.xsyntachs.tiktoksongs.SHARE"))
             .setIntent(Intent(this, MainActivity::class.java).setAction(Intent.ACTION_VIEW))
@@ -360,13 +361,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            if (e.message == "Nicht angemeldet") {
+            if (e is ApiError && e.status == 401) {
                 android.widget.Toast.makeText(context,
-                    "Sitzung abgelaufen, bitte neu anmelden", android.widget.Toast.LENGTH_LONG).show()
+                    context.getString(R.string.session_expired), android.widget.Toast.LENGTH_LONG).show()
                 onLogout()
                 return@LaunchedEffect
             }
-            error = e.message ?: "Netzwerkfehler"
+            error = (e as? ApiError)?.message ?: context.getString(R.string.network_error)
         }
     }
     LaunchedEffect(feed) {
@@ -440,10 +441,13 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
         } && (query.isBlank() || song.name.contains(query, true) || song.artist.contains(query, true))
     }
 
+    val deletedText = stringResource(R.string.song_deleted)
+    val undoText = stringResource(R.string.undo)
+
     fun deleteWithUndo(song: Song) {
         hidden.add(song.savedAt)
         scope.launch {
-            val result = snackbar.showSnackbar("Song gelöscht", actionLabel = "Rückgängig",
+            val result = snackbar.showSnackbar(deletedText, actionLabel = undoText,
                 duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) {
                 hidden.remove(song.savedAt)
@@ -468,36 +472,37 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 Text("Syntracks", fontSize = 27.sp, fontWeight = FontWeight.Black,
                     color = Ink, modifier = Modifier.weight(1f))
                 IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search, "Suche", tint = Ink)
+                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search,
+                        stringResource(R.string.search), tint = Ink)
                 }
                 Box {
                     var accountMenu by remember { mutableStateOf(false) }
                     IconButton(onClick = { accountMenu = true }) {
-                        Icon(Icons.Default.AccountCircle, "Konto", tint = Ink)
+                        Icon(Icons.Default.AccountCircle, stringResource(R.string.account), tint = Ink)
                     }
                     DropdownMenu(expanded = accountMenu, onDismissRequest = { accountMenu = false }) {
                         Text(
-                            "@${Api.user ?: ""} · ${feed?.songs?.size ?: 0} Songs",
+                            "@${Api.user ?: ""} · ${stringResource(R.string.songs_count, feed?.songs?.size ?: 0)}",
                             fontSize = 11.sp, fontWeight = FontWeight.Bold,
                             color = Scheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 15.dp, vertical = 8.dp),
                         )
                         DropdownMenuItem(
-                            text = { Text("Name ändern") },
+                            text = { Text(stringResource(R.string.change_name)) },
                             onClick = { accountMenu = false; dialog = "rename" },
                         )
                         DropdownMenuItem(
-                            text = { Text("Passwort ändern") },
+                            text = { Text(stringResource(R.string.change_password)) },
                             onClick = { accountMenu = false; dialog = "password" },
                         )
                         if (feed?.admin == true) {
                             DropdownMenuItem(
-                                text = { Text("Konten verwalten") },
+                                text = { Text(stringResource(R.string.manage_accounts)) },
                                 onClick = { accountMenu = false; dialog = "admin" },
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Abmelden") },
+                            text = { Text(stringResource(R.string.sign_out)) },
                             onClick = { accountMenu = false; onLogout() },
                         )
                         val installedVersion = remember {
@@ -505,9 +510,11 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                         }
                         Text(
                             when {
-                                latestVersion.isNullOrBlank() -> "Version $installedVersion"
-                                updateAvailable -> "Version $installedVersion · Neueste $latestVersion"
-                                else -> "Version $installedVersion (aktuell)"
+                                latestVersion.isNullOrBlank() ->
+                                    stringResource(R.string.version_label, installedVersion ?: "")
+                                updateAvailable ->
+                                    stringResource(R.string.version_latest, installedVersion ?: "", latestVersion ?: "")
+                                else -> stringResource(R.string.version_current, installedVersion ?: "")
                             },
                             fontSize = 11.sp, color = Scheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -528,17 +535,21 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                         .clickable { showStats = true }
                         .padding(horizontal = 16.dp, vertical = 9.dp),
                 ) {
-                    Text("Dein Geschmack", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
+                    Text(stringResource(R.string.your_taste), fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold, color = Ink)
                 }
                 if (view == "SONGS") {
                     Box {
                         var filterMenu by remember { mutableStateOf(false) }
-                        SourceChip("Filter: ${sourceFilter?.filter ?: "Alle"}", sourceFilter != null) { filterMenu = true }
+                        val activeFilter = sourceFilter?.let { stringResource(it.filter) }
+                            ?: stringResource(R.string.filter_all)
+                        SourceChip("${stringResource(R.string.filter_prefix)}: $activeFilter",
+                            sourceFilter != null) { filterMenu = true }
                         DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
-                            DropdownMenuItem(text = { Text("Alle") },
+                            DropdownMenuItem(text = { Text(stringResource(R.string.filter_all)) },
                                 onClick = { filterMenu = false; sourceFilter = null })
                             Song.Source.entries.filter { it != Song.Source.SIMILAR }.forEach { source ->
-                                DropdownMenuItem(text = { Text(source.filter) },
+                                DropdownMenuItem(text = { Text(stringResource(source.filter)) },
                                     onClick = { filterMenu = false; sourceFilter = source })
                             }
                         }
@@ -550,7 +561,11 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.padding(horizontal = 14.dp),
             ) {
-                listOf("SONGS" to "Song Verlauf", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
+                listOf(
+                    "SONGS" to stringResource(R.string.view_history),
+                    "FAV" to stringResource(R.string.view_favorites),
+                    "RECS" to stringResource(R.string.view_recommendations),
+                ).forEach { (key, label) ->
                     Column(
                         Modifier.clickable { view = key },
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -573,18 +588,19 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Neue Version verfügbar", fontWeight = FontWeight.SemiBold,
+                        Text(stringResource(R.string.update_available), fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp, color = Scheme.onBackground)
-                        Text("Lädt die aktuelle App direkt vom Server", fontSize = 12.sp,
+                        Text(stringResource(R.string.update_hint), fontSize = 12.sp,
                             color = Scheme.onSurfaceVariant)
                     }
+                    val updateFailed = stringResource(R.string.update_failed)
                     if (updating) CircularProgressIndicator(Modifier.size(18.dp), color = Cyan, strokeWidth = 2.dp)
-                    else ActionPill("Aktualisieren", Cyan) {
+                    else ActionPill(stringResource(R.string.update_action), Cyan) {
                         updating = true
                         scope.launch {
                             val ok = withContext(Dispatchers.IO) { runCatching { downloadUpdate(context) }.isSuccess }
                             updating = false
-                            if (!ok) snackbar.showSnackbar("Update-Download fehlgeschlagen")
+                            if (!ok) snackbar.showSnackbar(updateFailed)
                         }
                     }
                 }
@@ -594,7 +610,7 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    placeholder = { Text("Song oder Artist suchen…") },
+                    placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     singleLine = true,
                     shape = RoundedCornerShape(5.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -630,12 +646,12 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                             val ok = withContext(Dispatchers.IO) {
                                 runCatching { Api.favorite(song.savedAt, !song.favorite) }.isSuccess
                             }
-                            android.widget.Toast.makeText(context,
+                            android.widget.Toast.makeText(context, context.getString(
                                 when {
-                                    !ok -> "Speichern fehlgeschlagen"
-                                    song.favorite -> "Aus Favoriten entfernt"
-                                    else -> "In deine Favoriten gespeichert"
-                                }, android.widget.Toast.LENGTH_SHORT).show()
+                                    !ok -> R.string.save_failed
+                                    song.favorite -> R.string.removed_from_favorites
+                                    else -> R.string.saved_to_favorites
+                                }), android.widget.Toast.LENGTH_SHORT).show()
                             tick++
                         }
                     },
@@ -657,8 +673,8 @@ private fun AuroraScreen(clipboardSuggestion: String? = null, onClipboardHandled
                                 savedRecs.add(track.track + track.artist)
                                 tick++
                             }
-                            android.widget.Toast.makeText(context,
-                                if (ok) "In deine Favoriten gespeichert" else "Speichern fehlgeschlagen",
+                            android.widget.Toast.makeText(context, context.getString(
+                                if (ok) R.string.saved_to_favorites else R.string.save_failed),
                                 android.widget.Toast.LENGTH_SHORT).show()
                         }
                     },

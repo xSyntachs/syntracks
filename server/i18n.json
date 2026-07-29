@@ -1574,5 +1574,285 @@
     "fr": "Serveur injoignable.",
     "pt": "Servidor inacessível.",
     "tr": "Sunucuya ulaşılamıyor."
+  },
+  "search": {
+    "en": "Search",
+    "de": "Suche",
+    "es": "Buscar",
+    "fr": "Rechercher",
+    "pt": "Buscar",
+    "tr": "Ara"
+  },
+  "account": {
+    "en": "Account",
+    "de": "Konto",
+    "es": "Cuenta",
+    "fr": "Compte",
+    "pt": "Conta",
+    "tr": "Hesap"
+  },
+  "close": {
+    "en": "Close",
+    "de": "Schließen",
+    "es": "Cerrar",
+    "fr": "Fermer",
+    "pt": "Fechar",
+    "tr": "Kapat"
+  },
+  "discard": {
+    "en": "Discard",
+    "de": "Verwerfen",
+    "es": "Descartar",
+    "fr": "Ignorer",
+    "pt": "Descartar",
+    "tr": "Yoksay"
+  },
+  "listen": {
+    "en": "Listen",
+    "de": "Anhören",
+    "es": "Escuchar",
+    "fr": "Écouter",
+    "pt": "Ouvir",
+    "tr": "Dinle"
+  },
+  "remember": {
+    "en": "Save",
+    "de": "Merken",
+    "es": "Guardar",
+    "fr": "Garder",
+    "pt": "Guardar",
+    "tr": "Kaydet"
+  },
+  "cover": {
+    "en": "Cover",
+    "de": "Cover",
+    "es": "Portada",
+    "fr": "Pochette",
+    "pt": "Capa",
+    "tr": "Kapak"
+  },
+  "favorite_label": {
+    "en": "Favorite",
+    "de": "Favorit",
+    "es": "Favorito",
+    "fr": "Favori",
+    "pt": "Favorito",
+    "tr": "Favori"
+  },
+  "actions": {
+    "en": "Actions",
+    "de": "Aktionen",
+    "es": "Acciones",
+    "fr": "Actions",
+    "pt": "Ações",
+    "tr": "İşlemler"
+  },
+  "network_error": {
+    "en": "Network error",
+    "de": "Netzwerkfehler",
+    "es": "Error de red",
+    "fr": "Erreur réseau",
+    "pt": "Erro de rede",
+    "tr": "Ağ hatası"
+  },
+  "failed": {
+    "en": "Failed",
+    "de": "Fehlgeschlagen",
+    "es": "Ha fallado",
+    "fr": "Échec",
+    "pt": "Falhou",
+    "tr": "Başarısız"
+  },
+  "update_available": {
+    "en": "New version available",
+    "de": "Neue Version verfügbar",
+    "es": "Nueva versión disponible",
+    "fr": "Nouvelle version disponible",
+    "pt": "Nova versão disponível",
+    "tr": "Yeni sürüm mevcut"
+  },
+  "update_hint": {
+    "en": "Downloads the current app straight from the server",
+    "de": "Lädt die aktuelle App direkt vom Server",
+    "es": "Descarga la app actual directamente del servidor",
+    "fr": "Télécharge l'application actuelle directement depuis le serveur",
+    "pt": "Baixa o app atual direto do servidor",
+    "tr": "Güncel uygulamayı doğrudan sunucudan indirir"
+  },
+  "update_action": {
+    "en": "Update",
+    "de": "Aktualisieren",
+    "es": "Actualizar",
+    "fr": "Mettre à jour",
+    "pt": "Atualizar",
+    "tr": "Güncelle"
+  },
+  "update_failed": {
+    "en": "Update download failed",
+    "de": "Update-Download fehlgeschlagen",
+    "es": "La descarga de la actualización ha fallado",
+    "fr": "Le téléchargement de la mise à jour a échoué",
+    "pt": "O download da atualização falhou",
+    "tr": "Güncelleme indirilemedi"
+  },
+  "clipboard_link": {
+    "en": "TikTok link in the clipboard",
+    "de": "TikTok-Link in der Zwischenablage",
+    "es": "Enlace de TikTok en el portapapeles",
+    "fr": "Lien TikTok dans le presse-papiers",
+    "pt": "Link do TikTok na área de transferência",
+    "tr": "Panoda bir TikTok bağlantısı var"
+  },
+  "no_songs_yet": {
+    "en": "No songs yet.\nShare a TikTok video with this app.",
+    "de": "Noch keine Songs.\nTeile ein TikTok-Video mit dieser App.",
+    "es": "Todavía no hay canciones.\nComparte un vídeo de TikTok con esta app.",
+    "fr": "Aucun titre pour l'instant.\nPartagez une vidéo TikTok avec cette application.",
+    "pt": "Ainda não há músicas.\nCompartilhe um vídeo do TikTok com este app.",
+    "tr": "Henüz şarkı yok.\nBu uygulamayla bir TikTok videosu paylaş."
+  },
+  "download_started": {
+    "en": "Download started…",
+    "de": "Download gestartet…",
+    "es": "Descarga iniciada…",
+    "fr": "Téléchargement lancé…",
+    "pt": "Download iniciado…",
+    "tr": "İndirme başladı…"
+  },
+  "version_label": {
+    "en": "Version {name}",
+    "de": "Version {name}",
+    "es": "Versión {name}",
+    "fr": "Version {name}",
+    "pt": "Versão {name}",
+    "tr": "Sürüm {name}"
+  },
+  "version_latest": {
+    "en": "Version {name} · Latest {latest}",
+    "de": "Version {name} · Neueste {latest}",
+    "es": "Versión {name} · Última {latest}",
+    "fr": "Version {name} · Dernière {latest}",
+    "pt": "Versão {name} · Mais recente {latest}",
+    "tr": "Sürüm {name} · En yeni {latest}"
+  },
+  "version_current": {
+    "en": "Version {name} (current)",
+    "de": "Version {name} (aktuell)",
+    "es": "Versión {name} (actual)",
+    "fr": "Version {name} (à jour)",
+    "pt": "Versão {name} (atual)",
+    "tr": "Sürüm {name} (güncel)"
+  },
+  "admin_label": {
+    "en": "Admin",
+    "de": "Admin",
+    "es": "Admin",
+    "fr": "Admin",
+    "pt": "Admin",
+    "tr": "Yönetici"
+  },
+  "share_song": {
+    "en": "Share song",
+    "de": "Song teilen",
+    "es": "Compartir canción",
+    "fr": "Partager le titre",
+    "pt": "Compartilhar música",
+    "tr": "Şarkıyı paylaş"
+  },
+  "save_song": {
+    "en": "Save song",
+    "de": "Song speichern",
+    "es": "Guardar canción",
+    "fr": "Enregistrer le titre",
+    "pt": "Salvar música",
+    "tr": "Şarkıyı kaydet"
+  },
+  "undo": {
+    "en": "Undo",
+    "de": "Rückgängig",
+    "es": "Deshacer",
+    "fr": "Annuler",
+    "pt": "Desfazer",
+    "tr": "Geri al"
+  },
+  "no_clipboard_link": {
+    "en": "No TikTok link in the clipboard",
+    "de": "Kein TikTok-Link in der Zwischenablage",
+    "es": "No hay ningún enlace de TikTok en el portapapeles",
+    "fr": "Aucun lien TikTok dans le presse-papiers",
+    "pt": "Nenhum link do TikTok na área de transferência",
+    "tr": "Panoda TikTok bağlantısı yok"
+  },
+  "offline_queued": {
+    "en": "Offline, the song follows as soon as there is a connection",
+    "de": "Offline, Song wird nachgereicht sobald Netz da ist",
+    "es": "Sin conexión, la canción se enviará en cuanto vuelva la red",
+    "fr": "Hors ligne, le titre suivra dès que le réseau revient",
+    "pt": "Offline, a música segue assim que houver conexão",
+    "tr": "Çevrimdışı, bağlantı gelince şarkı gönderilecek"
+  },
+  "notif_channel_recognition": {
+    "en": "Song recognition",
+    "de": "Song-Erkennung",
+    "es": "Reconocimiento de canciones",
+    "fr": "Reconnaissance de titres",
+    "pt": "Reconhecimento de músicas",
+    "tr": "Şarkı tanıma"
+  },
+  "notif_recognizing": {
+    "en": "Identifying song…",
+    "de": "Song wird erkannt…",
+    "es": "Identificando la canción…",
+    "fr": "Identification du titre…",
+    "pt": "Identificando a música…",
+    "tr": "Şarkı tanınıyor…"
+  },
+  "notif_working": {
+    "en": "Syntracks is working in the background",
+    "de": "Syntracks arbeitet im Hintergrund",
+    "es": "Syntracks trabaja en segundo plano",
+    "fr": "Syntracks travaille en arrière-plan",
+    "pt": "O Syntracks está trabalhando em segundo plano",
+    "tr": "Syntracks arka planda çalışıyor"
+  },
+  "notif_link_failed": {
+    "en": "The shared link did not get through",
+    "de": "Der geteilte Link kam nicht durch",
+    "es": "El enlace compartido no llegó",
+    "fr": "Le lien partagé n'est pas passé",
+    "pt": "O link compartilhado não chegou",
+    "tr": "Paylaşılan bağlantı ulaşmadı"
+  },
+  "src_original_saved": {
+    "en": "Not recognised, saved as original sound",
+    "de": "Nicht erkannt, als Original-Sound gespeichert",
+    "es": "No reconocida, guardada como sonido original",
+    "fr": "Non reconnu, enregistré comme son original",
+    "pt": "Não reconhecida, salva como som original",
+    "tr": "Tanınmadı, orijinal ses olarak kaydedildi"
+  },
+  "digest_channel": {
+    "en": "Weekly recap",
+    "de": "Wochen-Rückblick",
+    "es": "Resumen semanal",
+    "fr": "Bilan de la semaine",
+    "pt": "Resumo da semana",
+    "tr": "Haftalık özet"
+  },
+  "digest_title": {
+    "en": "Your week",
+    "de": "Deine Woche",
+    "es": "Tu semana",
+    "fr": "Votre semaine",
+    "pt": "Sua semana",
+    "tr": "Haftan"
+  },
+  "confirm_new_password": {
+    "en": "Confirm new password",
+    "de": "Neues Passwort bestätigen",
+    "es": "Confirmar la nueva contraseña",
+    "fr": "Confirmer le nouveau mot de passe",
+    "pt": "Confirmar a nova senha",
+    "tr": "Yeni şifreyi onayla"
   }
 }

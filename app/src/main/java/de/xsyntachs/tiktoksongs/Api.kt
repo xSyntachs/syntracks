@@ -5,6 +5,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+class ApiError(val status: Int, message: String) : RuntimeException(message)
+
 object Api {
     private const val BASE = "https://syntracks.app"
     private var token: String? = null
@@ -82,6 +84,7 @@ object Api {
         val conn = URL(BASE + path).openConnection() as HttpURLConnection
         conn.requestMethod = method
         if (withToken) token?.let { conn.setRequestProperty("X-Token", it) }
+        conn.setRequestProperty("Accept-Language", java.util.Locale.getDefault().language)
         conn.connectTimeout = 10_000
         conn.readTimeout = 20_000
         if (body != null) {
@@ -90,7 +93,7 @@ object Api {
         }
         if (conn.responseCode >= 400) {
             val error = (conn.errorStream ?: conn.inputStream).bufferedReader().use { it.readText() }
-            throw RuntimeException(error.ifBlank { "Fehler ${conn.responseCode}" })
+            throw ApiError(conn.responseCode, error.ifBlank { "HTTP ${conn.responseCode}" })
         }
         return conn.inputStream.bufferedReader().use { it.readText() }
     }

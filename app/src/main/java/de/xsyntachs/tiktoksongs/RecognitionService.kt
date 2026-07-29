@@ -22,12 +22,12 @@ class RecognitionService : Service() {
     override fun onCreate() {
         super.onCreate()
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL, "Song-Erkennung", NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel(CHANNEL, getString(R.string.notif_channel_recognition), NotificationManager.IMPORTANCE_DEFAULT)
         )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val progress = build("Song wird erkannt…", "Syntracks arbeitet im Hintergrund", ongoing = true)
+        val progress = build(getString(R.string.notif_recognizing), getString(R.string.notif_working), ongoing = true)
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(1, progress, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
         } else {
@@ -55,18 +55,18 @@ class RecognitionService : Service() {
                 marker = newest.getString("saved_at")
                 found = true
                 val source = when {
-                    newest.optBoolean("recognized") -> "Per Shazam erkannt"
-                    newest.optBoolean("from_caption") -> "Aus Video-Text gelesen"
-                    newest.optBoolean("original") -> "Nicht erkannt, als Original-Sound gespeichert"
-                    else -> "Offizieller Song"
+                    newest.optBoolean("recognized") -> getString(R.string.src_shazam)
+                    newest.optBoolean("from_caption") -> getString(R.string.src_caption)
+                    newest.optBoolean("original") -> getString(R.string.src_original_saved)
+                    else -> getString(R.string.src_official)
                 }
-                manager.notify(2, build(newest.optString("name", "Unbekannt"),
-                    "${newest.optString("artist", "Unbekannt")} · $source"))
+                manager.notify(2, build(newest.optString("name").ifBlank { getString(R.string.unknown_artist) },
+                    "${newest.optString("artist").ifBlank { getString(R.string.unknown_artist) }} · $source"))
             }
             if (feed.getJSONArray("pending").length() == 0 && found) break
             if (feed.getJSONArray("pending").length() == 0 && !found &&
                 System.currentTimeMillis() > deadline - 130_000) {
-                manager.notify(2, build("Speichern fehlgeschlagen", "Der geteilte Link kam nicht durch"))
+                manager.notify(2, build(getString(R.string.save_failed), getString(R.string.notif_link_failed)))
                 break
             }
         }

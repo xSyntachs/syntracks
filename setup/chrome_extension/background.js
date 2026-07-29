@@ -5,7 +5,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     const { token } = await chrome.storage.local.get("token");
     if (!token) {
-      sendResponse({ ok: false, text: "Nicht angemeldet. Klick oben auf das Syntracks-Symbol und melde dich an." });
+      sendResponse({ ok: false, text: chrome.i18n.getMessage("sign_in_first") });
       return;
     }
     try {
@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       });
       sendResponse({ ok: r.ok, text: await r.text() });
     } catch (e) {
-      sendResponse({ ok: false, text: "Server nicht erreichbar" });
+      sendResponse({ ok: false, text: chrome.i18n.getMessage("server_unreachable") });
     }
   })();
   return true;

@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,8 @@ fun AdminOverlay(onClose: () -> Unit) {
     var viewFor by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val adminLabel = stringResource(R.string.admin_label)
+    val mismatch = stringResource(R.string.passwords_mismatch)
 
     LaunchedEffect(reload) {
         users = runCatching {
@@ -79,18 +82,18 @@ fun AdminOverlay(onClose: () -> Unit) {
         var new by remember { mutableStateOf("") }
         var confirm by remember { mutableStateOf("") }
         var error by remember { mutableStateOf<String?>(null) }
-        OverlayFrame("Passwort für @$target", onClose = { resetFor = null }) {
-            DialogField(new, { new = it; error = null }, "Neues Passwort", password = true)
-            DialogField(confirm, { confirm = it; error = null }, "Neues Passwort bestätigen", password = true)
+        OverlayFrame(stringResource(R.string.password_for, target), onClose = { resetFor = null }) {
+            DialogField(new, { new = it; error = null }, stringResource(R.string.new_password), password = true)
+            DialogField(confirm, { confirm = it; error = null }, stringResource(R.string.confirm_new_password), password = true)
             error?.let { Text(it, color = Pink, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
-            DialogButton("Zurücksetzen") {
+            DialogButton(stringResource(R.string.reset)) {
                 if (new != confirm) {
-                    error = "Passwörter stimmen nicht überein"
+                    error = mismatch
                     return@DialogButton
                 }
                 scope.launch {
                     runCatching { withContext(Dispatchers.IO) { Api.adminResetPassword(target, new) } }
-                    android.widget.Toast.makeText(context, "Zurückgesetzt", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, context.getString(R.string.reset_done), android.widget.Toast.LENGTH_SHORT).show()
                     resetFor = null
                 }
             }
@@ -98,26 +101,26 @@ fun AdminOverlay(onClose: () -> Unit) {
         return
     }
 
-    OverlayFrame("Konten verwalten", onClose) {
+    OverlayFrame(stringResource(R.string.manage_accounts), onClose) {
         when (val list = users) {
             null -> Row(Modifier.padding(vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(20.dp), color = Cyan, strokeWidth = 2.dp)
                 Spacer(Modifier.width(10.dp))
-                Text("Lädt…", color = Scheme.onSurfaceVariant)
+                Text(stringResource(R.string.loading), color = Scheme.onSurfaceVariant)
             }
             else -> LazyColumn(Modifier.fillMaxWidth().height(440.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(list, key = { it.first }) { (name, admin, count) ->
                     AdminRow(
                         avatar = { Text(name.first().uppercase(), fontWeight = FontWeight.Bold, color = Color.White) },
                         avatarBrush = SolidColor(Brand),
-                        title = if (admin) "@$name · Admin" else "@$name",
+                        title = if (admin) "@$name · $adminLabel" else "@$name",
                         titleColor = if (admin) Cyan else Scheme.onSurface,
-                        subtitle = "$count Songs",
+                        subtitle = stringResource(R.string.songs_count, count),
                     ) {
-                        ActionPill("Ansehen", Cyan) { viewFor = name }
-                        ActionPill("Passwort", Scheme.onSurface) { resetFor = name }
+                        ActionPill(stringResource(R.string.view_action), Cyan) { viewFor = name }
+                        ActionPill(stringResource(R.string.password_action), Scheme.onSurface) { resetFor = name }
                         if (name != Api.user) {
-                            ActionPill("Löschen", Pink) {
+                            ActionPill(stringResource(R.string.delete), Pink) {
                                 scope.launch {
                                     runCatching { withContext(Dispatchers.IO) { Api.adminDeleteUser(name) } }
                                     reload++
@@ -183,9 +186,9 @@ private fun UserLibraryOverlay(user: String, onClose: () -> Unit) {
         }
     }
 
-    OverlayFrame("Sammlung von @$user", onClose) {
+    OverlayFrame(stringResource(R.string.collection_of, user), onClose) {
         Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.padding(bottom = 10.dp)) {
-            listOf("VERLAUF" to "Song Verlauf", "FAV" to "Favoriten", "RECS" to "Empfehlungen").forEach { (key, label) ->
+            listOf("VERLAUF" to stringResource(R.string.view_history), "FAV" to stringResource(R.string.view_favorites), "RECS" to stringResource(R.string.view_recommendations)).forEach { (key, label) ->
                 Text(label, fontSize = 13.sp,
                     fontWeight = if (tab == key) FontWeight.Bold else FontWeight.Medium,
                     color = if (tab == key) Scheme.onSurface else Scheme.onSurfaceVariant,
@@ -195,13 +198,13 @@ private fun UserLibraryOverlay(user: String, onClose: () -> Unit) {
         LazyColumn(Modifier.fillMaxWidth().height(440.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (tab == "RECS") {
                 val list = recs.orEmpty()
-                if (list.isEmpty()) item { Text("Keine Empfehlungen", color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
+                if (list.isEmpty()) item { Text(stringResource(R.string.no_recommendations), color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
                 items(list) { t -> LibraryRow(t.artwork, t.track, t.artist, null, favorite = false) }
             } else {
                 val list = songs
                 val shown = if (tab == "FAV") list.orEmpty().filter { it.favorite } else list.orEmpty()
-                if (list != null && shown.isEmpty()) item { Text("Nichts vorhanden", color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
-                items(shown, key = { it.savedAt }) { s -> LibraryRow(s.artwork, s.name, s.artist, s.source.label, s.favorite) }
+                if (list != null && shown.isEmpty()) item { Text(stringResource(R.string.nothing_here), color = Scheme.onSurfaceVariant, fontSize = 13.sp) }
+                items(shown, key = { it.savedAt }) { s -> LibraryRow(s.artwork, s.name, s.artist, stringResource(s.source.label), s.favorite) }
             }
         }
     }
@@ -212,7 +215,7 @@ private fun LibraryRow(artwork: String?, name: String, artist: String, badge: St
     Row(verticalAlignment = Alignment.CenterVertically) {
         val cover = rememberCover(artwork)
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.07f))) {
-            cover?.let { Image(it.asImageBitmap(), "Cover", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            cover?.let { Image(it.asImageBitmap(), stringResource(R.string.cover), Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
@@ -221,7 +224,7 @@ private fun LibraryRow(artwork: String?, name: String, artist: String, badge: St
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 if (favorite) {
                     Spacer(Modifier.width(6.dp))
-                    Icon(Icons.Default.Star, "Favorit", tint = Gold, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Default.Star, stringResource(R.string.favorite_label), tint = Gold, modifier = Modifier.size(14.dp))
                 }
             }
             Text(listOfNotNull(artist.takeIf { it.isNotBlank() }, badge).joinToString(" · "),

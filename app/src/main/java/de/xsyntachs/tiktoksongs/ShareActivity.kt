@@ -28,7 +28,7 @@ class ShareActivity : Activity() {
                         .putStringSet("pending", prefs.getStringSet("pending", emptySet())!! + shared)
                         .apply()
                     runOnUiThread {
-                        Toast.makeText(app, "Offline, Song wird nachgereicht sobald Netz da ist", Toast.LENGTH_LONG).show()
+                        Toast.makeText(app, getString(R.string.offline_queued), Toast.LENGTH_LONG).show()
                     }
                 }
         }

@@ -1,0 +1,74 @@
+{
+  "sign_in": {
+    "message": "Sign in"
+  },
+  "sign_out": {
+    "message": "Sign out"
+  },
+  "create_account": {
+    "message": "Create account"
+  },
+  "new_here": {
+    "message": "New here? Create an account"
+  },
+  "already_account": {
+    "message": "Already have an account? Sign in"
+  },
+  "username": {
+    "message": "Username"
+  },
+  "password": {
+    "message": "Password"
+  },
+  "passwords_mismatch": {
+    "message": "Passwords do not match"
+  },
+  "not_signed_in": {
+    "message": "Not signed in"
+  },
+  "server_unreachable": {
+    "message": "Server not reachable."
+  },
+  "save_failed": {
+    "message": "Saving failed"
+  },
+  "ext_name": {
+    "message": "Syntracks"
+  },
+  "ext_description": {
+    "message": "Saves the music from the TikTok video you are watching into your Syntracks collection."
+  },
+  "confirm_pw": {
+    "message": "Confirm password"
+  },
+  "save_song": {
+    "message": "Save song"
+  },
+  "save_current_video": {
+    "message": "Save current video"
+  },
+  "open_web_app": {
+    "message": "Open web app"
+  },
+  "open_collection": {
+    "message": "Open collection"
+  },
+  "no_tiktok_tab": {
+    "message": "No TikTok tab open"
+  },
+  "open_video_alone": {
+    "message": "Open the video on its own (click its description in the feed), otherwise the browser does not know the video address."
+  },
+  "address_not_found": {
+    "message": "Video address not found, open the video on its own."
+  },
+  "saving_video": {
+    "message": "Saving video…"
+  },
+  "reload_page": {
+    "message": "The extension was updated, reload the page."
+  },
+  "sign_in_first": {
+    "message": "Not signed in. Click the Syntracks icon above and sign in."
+  }
+}

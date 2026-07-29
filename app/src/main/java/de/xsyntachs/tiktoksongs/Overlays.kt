@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,7 +77,7 @@ fun OverlayFrame(title: String, onClose: () -> Unit, content: @Composable () -> 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, "Schließen", tint = Scheme.onSurfaceVariant)
+                        Icon(Icons.Default.Close, stringResource(R.string.close), tint = Scheme.onSurfaceVariant)
                     }
                 }
                 content()
@@ -127,14 +128,14 @@ fun SimilarOverlay(
     val scope = rememberCoroutineScope()
     val saved = remember { mutableStateListOf<String>() }
     val context = LocalContext.current
-    OverlayFrame("Ähnlich zu ${seed.name}", onClose) {
+    OverlayFrame(stringResource(R.string.similar_to, seed.name), onClose) {
         when {
             tracks == null -> Row(Modifier.padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(22.dp), color = Cyan, strokeWidth = 2.5.dp)
                 Spacer(Modifier.width(12.dp))
-                Text("Suche ähnliche Songs…", color = Scheme.onSurfaceVariant)
+                Text(stringResource(R.string.searching_similar), color = Scheme.onSurfaceVariant)
             }
-            tracks.isEmpty() -> Text("Nichts gefunden.", Modifier.padding(vertical = 24.dp), color = Scheme.onSurfaceVariant)
+            tracks.isEmpty() -> Text(stringResource(R.string.nothing_found), Modifier.padding(vertical = 24.dp), color = Scheme.onSurfaceVariant)
             else -> LazyColumn(
                 modifier = Modifier.fillMaxWidth().height(420.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -161,10 +162,10 @@ fun SimilarOverlay(
                                 }
                                 if (result.isSuccess) {
                                     saved.add(track.track + track.artist)
-                                    android.widget.Toast.makeText(context, "In deine Favoriten gespeichert", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, context.getString(R.string.saved_to_favorites), android.widget.Toast.LENGTH_SHORT).show()
                                     onSaved()
                                 } else {
-                                    android.widget.Toast.makeText(context, "Speichern fehlgeschlagen", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, context.getString(R.string.save_failed), android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -181,14 +182,14 @@ fun RenameDialog(onClose: () -> Unit, onDone: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    OverlayFrame("Name ändern", onClose) {
-        DialogField(name, { name = it.trim(); error = null }, "Neuer Benutzername")
+    OverlayFrame(stringResource(R.string.change_name), onClose) {
+        DialogField(name, { name = it.trim(); error = null }, stringResource(R.string.new_username))
         error?.let { Text(it, color = Pink, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
-        DialogButton("Speichern") {
+        DialogButton(stringResource(R.string.save)) {
             scope.launch {
                 runCatching { withContext(Dispatchers.IO) { Api.rename(context, name) } }
                     .onSuccess {
-                        android.widget.Toast.makeText(context, "Umbenannt in @$it", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, context.getString(R.string.renamed_to, it), android.widget.Toast.LENGTH_SHORT).show()
                         onDone(); onClose()
                     }
                     .onFailure { error = it.message }
@@ -205,20 +206,21 @@ fun PasswordDialog(onClose: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    OverlayFrame("Passwort ändern", onClose) {
-        DialogField(old, { old = it; error = null }, "Aktuelles Passwort", password = true)
-        DialogField(new, { new = it; error = null }, "Neues Passwort", password = true)
-        DialogField(confirm, { confirm = it; error = null }, "Neues Passwort bestätigen", password = true)
+    val mismatch = stringResource(R.string.passwords_mismatch)
+    OverlayFrame(stringResource(R.string.change_password), onClose) {
+        DialogField(old, { old = it; error = null }, stringResource(R.string.current_password), password = true)
+        DialogField(new, { new = it; error = null }, stringResource(R.string.new_password), password = true)
+        DialogField(confirm, { confirm = it; error = null }, stringResource(R.string.confirm_new_password), password = true)
         error?.let { Text(it, color = Pink, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
-        DialogButton("Ändern") {
+        DialogButton(stringResource(R.string.change)) {
             if (new != confirm) {
-                error = "Passwörter stimmen nicht überein"
+                error = mismatch
                 return@DialogButton
             }
             scope.launch {
                 runCatching { withContext(Dispatchers.IO) { Api.changePassword(old, new) } }
                     .onSuccess {
-                        android.widget.Toast.makeText(context, "Passwort geändert", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, context.getString(R.string.password_changed), android.widget.Toast.LENGTH_SHORT).show()
                         onClose()
                     }
                     .onFailure { error = it.message }
@@ -230,14 +232,14 @@ fun PasswordDialog(onClose: () -> Unit) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
-    OverlayFrame("Dein Geschmack", onClose) {
+    OverlayFrame(stringResource(R.string.your_taste), onClose) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)) {
-            StatChip("${songs.size} Songs")
-            StatChip("${thisWeek(songs)} diese Woche")
-            StatChip("${songs.count { it.favorite }} Favoriten")
-            topArtist(songs)?.let { top -> StatChip("Top $top") }
+            StatChip(stringResource(R.string.songs_count, songs.size))
+            StatChip(stringResource(R.string.this_week, thisWeek(songs)))
+            StatChip(stringResource(R.string.favorites_count, songs.count { it.favorite }))
+            topArtist(songs)?.let { top -> StatChip("${stringResource(R.string.top_artists)}: $top") }
         }
         val genres = songs.mapNotNull { it.genre }.groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
@@ -245,7 +247,7 @@ fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
             .entries.sortedByDescending { it.value }.take(3)
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (genres.isEmpty()) {
-                Text("Noch keine Genre-Daten. Genres kommen automatisch bei jedem erkannten Song dazu.",
+                Text(stringResource(R.string.no_genre_data),
                     color = Scheme.onSurfaceVariant, fontSize = 13.sp)
             } else {
                 val max = genres.first().value
@@ -266,11 +268,11 @@ fun StatsOverlay(songs: List<Song>, onClose: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text("Top-Artists", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.top_artists), fontSize = 14.sp, fontWeight = FontWeight.Bold)
             artists.forEach { (artist, count) ->
                 Row {
                     Text(artist, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                    Text(if (count == 1) "1 Song" else "$count Songs", fontSize = 13.sp, color = Scheme.onSurfaceVariant)
+                    Text(if (count == 1) stringResource(R.string.one_song) else stringResource(R.string.songs_count, count), fontSize = 13.sp, color = Scheme.onSurfaceVariant)
                 }
             }
         }

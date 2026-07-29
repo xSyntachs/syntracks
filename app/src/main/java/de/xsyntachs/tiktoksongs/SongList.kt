@@ -78,6 +78,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -117,7 +118,8 @@ private fun download(context: Context, url: String, filename: String, mime: Stri
         .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, safe)
     context.getSystemService(android.app.DownloadManager::class.java).enqueue(request)
-    android.widget.Toast.makeText(context, "Download gestartet…", android.widget.Toast.LENGTH_SHORT).show()
+    android.widget.Toast.makeText(context, context.getString(R.string.download_started),
+        android.widget.Toast.LENGTH_SHORT).show()
 }
 
 private fun searchYouTubeMusic(context: Context, song: Song) {
@@ -158,17 +160,17 @@ fun SongList(
             GlassBox {
                 Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    Text("TikTok-Link in der Zwischenablage", Modifier.weight(1f), fontSize = 14.sp)
+                    Text(stringResource(R.string.clipboard_link), Modifier.weight(1f), fontSize = 14.sp)
                     Surface(
                         color = Cyan.copy(alpha = 0.25f),
                         shape = RoundedCornerShape(99.dp),
                         modifier = Modifier.clickable { onClipboardHandled(true) },
                     ) {
-                        Text("Speichern", Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        Text(stringResource(R.string.save), Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             fontSize = 13.sp, color = Cyan)
                     }
                     IconButton(onClick = { onClipboardHandled(false) }) {
-                        Icon(Icons.Default.Close, "Verwerfen", tint = Scheme.onSurfaceVariant)
+                        Icon(Icons.Default.Close, stringResource(R.string.discard), tint = Scheme.onSurfaceVariant)
                     }
                 }
             }
@@ -259,16 +261,16 @@ private fun RecsCard(
 ) {
     GlassBox {
         Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-            Text("Für dich", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text("Auf Basis deiner letzten Songs", fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+            Text(stringResource(R.string.for_you), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(stringResource(R.string.based_on_recent), fontSize = 12.sp, color = Scheme.onSurfaceVariant)
             Spacer(Modifier.height(6.dp))
             when {
                 recs == null -> Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = Cyan, strokeWidth = 2.dp)
                     Spacer(Modifier.width(10.dp))
-                    Text("Empfehlungen werden gesucht…", color = Scheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(stringResource(R.string.searching_recs), color = Scheme.onSurfaceVariant, fontSize = 13.sp)
                 }
-                recs.isEmpty() -> Text("Gerade keine neuen Empfehlungen.",
+                recs.isEmpty() -> Text(stringResource(R.string.no_recs_now),
                     color = Scheme.onSurfaceVariant, fontSize = 13.sp)
                 else -> recs.forEach { track ->
                     SimilarRow(
@@ -337,23 +339,30 @@ fun SimilarRow(track: SimilarTrack, playing: Boolean?, alreadySaved: Boolean, on
                 .background(Cyan.copy(alpha = 0.15f)).clickable(onClick = onPlay),
             contentAlignment = Alignment.Center,
         ) {
-            cover?.let { Image(it.asImageBitmap(), "Cover", Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            cover?.let {
+                Image(it.asImageBitmap(), stringResource(R.string.cover), Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop)
+            }
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (cover != null) 0.35f else 0f)))
             when (playing) {
-                null -> Icon(Icons.Default.PlayArrow, "Anhören", tint = Color.White, modifier = Modifier.size(22.dp))
+                null -> Icon(Icons.Default.PlayArrow, stringResource(R.string.listen),
+                    tint = Color.White, modifier = Modifier.size(22.dp))
                 true -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 false -> PauseGlyph(Color.White, 12.dp)
             }
         }
         Spacer(Modifier.width(10.dp))
+        val unknown = stringResource(R.string.unknown_artist)
         Column(Modifier.weight(1f)) {
-            Text(track.track, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(track.artist, fontSize = 12.sp, color = Scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(track.track.ifBlank { unknown }, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(track.artist.ifBlank { unknown }, fontSize = 12.sp, color = Scheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         IconButton(onClick = onSave, enabled = !alreadySaved) {
             Icon(
                 if (alreadySaved) Icons.Default.Check else Icons.Default.Add,
-                "Merken",
+                stringResource(R.string.remember),
                 tint = if (alreadySaved) Color(0xFF4CD964) else Cyan,
             )
         }
@@ -368,10 +377,10 @@ private val STAGE_PROGRESS = mapOf(
 )
 
 private val STAGE_LABEL = mapOf(
-    "waiting" to "Wartet",
-    "loading_video" to "Video wird geladen",
-    "identifying" to "Song wird erkannt",
-    "saving" to "Wird gespeichert",
+    "waiting" to R.string.waiting,
+    "loading_video" to R.string.loading_video,
+    "identifying" to R.string.identifying,
+    "saving" to R.string.saving,
 )
 
 @Composable
@@ -388,12 +397,14 @@ private fun PendingCard(count: Int, stage: String?) {
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(
-                        if (count == 1) "1 Song wird verarbeitet…" else "$count Songs werden verarbeitet…",
+                        if (count == 1) stringResource(R.string.processing_one)
+                        else stringResource(R.string.processing_many, count),
                         color = Cyan,
                         fontWeight = FontWeight.Medium,
                     )
                     stage?.let { key ->
-                        Text(STAGE_LABEL[key] ?: key, fontSize = 12.sp, color = Scheme.onSurfaceVariant)
+                        Text(STAGE_LABEL[key]?.let { stringResource(it) } ?: key,
+                            fontSize = 12.sp, color = Scheme.onSurfaceVariant)
                     }
                 }
             }
@@ -420,7 +431,7 @@ private fun EmptyState(filtered: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            if (filtered) "Nichts gefunden." else "Noch keine Songs.\nTeile ein TikTok-Video mit dieser App.",
+            stringResource(if (filtered) R.string.nothing_found else R.string.no_songs_yet),
             color = Scheme.onSurfaceVariant,
             fontSize = 14.sp,
         )
@@ -439,12 +450,13 @@ private fun CoverButton(song: Song, buffering: Boolean?, accent: Color, onPlay: 
         contentAlignment = Alignment.Center,
     ) {
         cover?.let {
-            Image(it.asImageBitmap(), "Cover", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(it.asImageBitmap(), stringResource(R.string.cover), Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop)
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (cover != null) 0.35f else 0f)))
         Crossfade(buffering, label = "playState") { state ->
             when (state) {
-                null -> Icon(Icons.Default.PlayArrow, "Anhören",
+                null -> Icon(Icons.Default.PlayArrow, stringResource(R.string.listen),
                     tint = if (cover != null) Color.White else accent, modifier = Modifier.size(26.dp))
                 true -> CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                 false -> PauseGlyph(Color.White, 15.dp)
@@ -479,16 +491,17 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                     onPlay()
                 }
                 Spacer(Modifier.width(12.dp))
+                val unknown = stringResource(R.string.unknown_artist)
                 Column(Modifier.weight(1f)) {
                     Text(
-                        song.name,
+                        song.name.ifBlank { unknown },
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        song.artist,
+                        song.artist.ifBlank { unknown },
                         fontSize = 13.sp,
                         color = Scheme.onSurfaceVariant,
                         maxLines = 1,
@@ -497,7 +510,7 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                     Spacer(Modifier.height(5.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            song.source.label.uppercase(),
+                            stringResource(song.source.label).uppercase(),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.1.sp,
@@ -505,7 +518,8 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                         )
                         if (song.favorite) {
                             Spacer(Modifier.width(10.dp))
-                            Icon(Icons.Default.Star, "Favorit", tint = Brand, modifier = Modifier.size(12.dp))
+                            Icon(Icons.Default.Star, stringResource(R.string.favorite_label),
+                                tint = Brand, modifier = Modifier.size(12.dp))
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(relativeTime(song.savedAt), fontSize = 10.sp, color = Scheme.onSurfaceVariant)
@@ -513,21 +527,26 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                 }
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Default.MoreVert, "Aktionen", tint = Scheme.onSurfaceVariant)
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.actions),
+                            tint = Scheme.onSurfaceVariant)
                     }
                     val isOriginal = song.source == Song.Source.ORIGINAL
                     val isSimilar = song.source == Song.Source.SIMILAR
+                    val shareTitle = stringResource(R.string.share_song)
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        MenuHeader("Abspielen")
+                        MenuHeader(stringResource(R.string.group_play))
                         if (!isOriginal) {
                             DropdownMenuItem(
-                                text = { Text("Ganzen Song abspielen") },
+                                text = { Text(stringResource(R.string.play_full_song)) },
                                 leadingIcon = { Icon(Icons.Default.PlayArrow, null) },
                                 onClick = { menuOpen = false; onPlayFull() },
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text(if (isSimilar) "Auf Deezer öffnen" else "TikTok öffnen") },
+                            text = {
+                                Text(stringResource(
+                                    if (isSimilar) R.string.open_deezer else R.string.open_tiktok))
+                            },
                             leadingIcon = { Icon(Icons.Default.PlayArrow, null) },
                             onClick = {
                                 menuOpen = false
@@ -535,22 +554,25 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                             },
                         )
 
-                        MenuHeader("Sammlung")
+                        MenuHeader(stringResource(R.string.group_collection))
                         DropdownMenuItem(
-                            text = { Text(if (song.favorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen") },
+                            text = {
+                                Text(stringResource(if (song.favorite) R.string.remove_from_favorites
+                                    else R.string.add_to_favorites))
+                            },
                             leadingIcon = { Icon(Icons.Default.Star, null) },
                             onClick = { menuOpen = false; onFavorite() },
                         )
 
                         if (!isOriginal) {
-                            MenuHeader("Entdecken")
+                            MenuHeader(stringResource(R.string.group_discover))
                             DropdownMenuItem(
-                                text = { Text("Ähnliche Songs") },
+                                text = { Text(stringResource(R.string.similar_songs)) },
                                 leadingIcon = { Icon(Icons.Default.Add, null) },
                                 onClick = { menuOpen = false; onSimilar() },
                             )
                             DropdownMenuItem(
-                                text = { Text("Auf Spotify suchen") },
+                                text = { Text(stringResource(R.string.search_spotify)) },
                                 leadingIcon = { Icon(Icons.Default.Search, null) },
                                 onClick = {
                                     menuOpen = false
@@ -560,15 +582,18 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Auf YouTube Music suchen") },
+                                text = { Text(stringResource(R.string.search_ytmusic)) },
                                 leadingIcon = { Icon(Icons.Default.Search, null) },
                                 onClick = { menuOpen = false; searchYouTubeMusic(context, song) },
                             )
                         }
 
-                        MenuHeader("Herunterladen")
+                        MenuHeader(stringResource(R.string.group_download))
                         DropdownMenuItem(
-                            text = { Text(if (isOriginal) "Sound als MP3" else "Song als MP3") },
+                            text = {
+                                Text(stringResource(
+                                    if (isOriginal) R.string.sound_as_mp3 else R.string.song_as_mp3))
+                            },
                             leadingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
                             onClick = {
                                 menuOpen = false
@@ -578,7 +603,7 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                         )
                         if (!isSimilar) {
                             DropdownMenuItem(
-                                text = { Text("TikTok-Video als MP4") },
+                                text = { Text(stringResource(R.string.video_as_mp4)) },
                                 leadingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
                                 onClick = {
                                     menuOpen = false
@@ -588,9 +613,9 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                             )
                         }
 
-                        MenuHeader("Teilen")
+                        MenuHeader(stringResource(R.string.group_share))
                         DropdownMenuItem(
-                            text = { Text("Namen kopieren") },
+                            text = { Text(stringResource(R.string.copy_name)) },
                             leadingIcon = { Icon(Icons.Default.Share, null) },
                             onClick = {
                                 menuOpen = false
@@ -598,7 +623,7 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Song teilen") },
+                            text = { Text(shareTitle) },
                             leadingIcon = { Icon(Icons.Default.Share, null) },
                             onClick = {
                                 menuOpen = false
@@ -606,11 +631,11 @@ private fun SongCard(song: Song, buffering: Boolean?, progress: Float, volume: F
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, "${song.artist} - ${song.name}\n${song.url}")
                                 }
-                                context.startActivity(Intent.createChooser(send, "Song teilen"))
+                                context.startActivity(Intent.createChooser(send, shareTitle))
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Löschen") },
+                            text = { Text(stringResource(R.string.delete)) },
                             leadingIcon = { Icon(Icons.Default.Delete, null) },
                             onClick = { menuOpen = false; onDelete() },
                         )
