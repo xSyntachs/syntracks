@@ -22,6 +22,10 @@
   .banner h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 27px;
                letter-spacing: -.035em; line-height: 1; }
   .banner p { color: #121212; opacity: .82; font-size: 13px; margin-top: 5px; line-height: 1.45; }
+  .banner .back { display: inline-block; margin-bottom: 9px; color: #121212; font-size: 12px;
+                  font-weight: 700; text-decoration: none; opacity: .8; }
+  .banner .back::before { content: "←"; margin-right: 6px; }
+  .banner .back:hover { opacity: 1; text-decoration: underline; }
   .banner .clock { display: inline-block; margin-top: 9px; background: #121212; color: var(--brand);
                    font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 3px; }
 
@@ -56,8 +60,9 @@
                cursor: pointer; white-space: nowrap; flex: none; }
 
   figure { margin: 12px 0 0; }
-  figure svg { width: 100%; max-width: 260px; height: auto; display: block;
-               border: 2px solid var(--line); border-radius: var(--r); }
+  figure svg.shot { width: 100%; max-width: 300px; height: auto; display: block;
+                    border: 2px solid var(--line); border-radius: var(--r); }
+  figcaption { font-size: 11.5px; color: var(--dim); margin-top: 6px; }
 
   details { border: 2px solid var(--line); border-radius: var(--r); margin-bottom: 8px; }
   details summary { cursor: pointer; padding: 13px 14px; font-weight: 600; font-size: 14px;
@@ -71,6 +76,7 @@
 <body>
 <div class="guide">
   <div class="banner">
+    <a class="back" href="/" data-i18n="ios_back"></a>
     <h1 data-i18n="ios_title">Syntracks on your iPhone</h1>
     <p data-i18n="ios_intro"></p>
     <span class="clock" data-i18n="ios_time"></span>
@@ -79,16 +85,7 @@
   <div class="guide-inner">
 
     <section class="part">
-      <div class="part-head"><span class="part-num">1</span><h2 data-i18n="ios_part_one"></h2></div>
-      <p data-i18n="ios_code_intro"></p>
-      <div class="code-row">
-        <code class="block" id="token" data-i18n="ios_not_signed"></code>
-        <button class="mini-copy" id="copy-token" data-source="token"></button>
-      </div>
-    </section>
-
-    <section class="part">
-      <div class="part-head"><span class="part-num">2</span><h2 data-i18n="ios_part_two"></h2></div>
+      <div class="part-head"><span class="part-num">1</span><h2 data-i18n="ios_part_two"></h2></div>
       <ol class="steps">
         <li data-i18n="ios_s1"></li>
         <li data-i18n="ios_s2"></li>
@@ -100,22 +97,65 @@
           </div>
         </li>
         <li data-i18n="ios_s4"></li>
-        <li><span data-i18n="ios_s5"></span> <code>X-Token</code></li>
-        <li data-i18n="ios_s6"></li>
+        <li>
+          <span data-i18n="ios_s5"></span> <code>X-Token</code>
+          <div class="code-row">
+            <code class="block" id="token" data-i18n="ios_not_signed"></code>
+            <button class="mini-copy" id="copy-token" data-source="token"></button>
+          </div>
+        </li>
+        <li>
+          <span data-i18n="ios_s6"></span>
+          <figure>
+            <svg class="shot" viewBox="0 0 300 250" aria-hidden="true">
+              <rect width="300" height="250" rx="10" fill="#F2F2F7"/>
+              <rect x="12" y="12" width="276" height="52" rx="10" fill="#fff"/>
+              <circle cx="30" cy="38" r="10" fill="#2F80ED"/>
+              <path d="M25 38h10M31 34l4 4-4 4" stroke="#fff" stroke-width="1.6" fill="none"/>
+              <text x="48" y="34" font-size="11" font-weight="600" fill="#000">Get contents of</text>
+              <text x="48" y="49" font-size="11" font-weight="600" fill="#2F80ED">https://syntracks.app/add</text>
+              <rect x="12" y="72" width="276" height="34" rx="10" fill="#fff"/>
+              <text x="26" y="93" font-size="11" fill="#000">Method</text>
+              <rect x="228" y="80" width="46" height="19" rx="9" fill="#E5E5EA"/>
+              <text x="240" y="93" font-size="10.5" font-weight="700" fill="#000">POST</text>
+              <rect x="12" y="114" width="276" height="54" rx="10" fill="#fff"/>
+              <text x="26" y="132" font-size="11" fill="#000">Headers</text>
+              <rect x="26" y="140" width="110" height="19" rx="4" fill="#F2F2F7"/>
+              <text x="34" y="153" font-size="10" font-family="ui-monospace, monospace" fill="#000">X-Token</text>
+              <rect x="146" y="140" width="128" height="19" rx="4" fill="#F2F2F7"/>
+              <text x="154" y="153" font-size="10" font-family="ui-monospace, monospace" fill="#8E8E93">your code</text>
+              <rect x="12" y="176" width="276" height="60" rx="10" fill="#fff"/>
+              <text x="26" y="194" font-size="11" fill="#000">Request Body</text>
+              <rect x="228" y="182" width="46" height="19" rx="9" fill="#E5E5EA"/>
+              <text x="242" y="195" font-size="10.5" font-weight="700" fill="#000">File</text>
+              <rect x="26" y="208" width="112" height="20" rx="10" fill="#D6E4FF" stroke="#2F80ED" stroke-width="1.4"/>
+              <text x="36" y="222" font-size="10" font-weight="600" fill="#2F80ED">Shortcut Input</text>
+            </svg>
+          </figure>
+        </li>
         <li>
           <span data-i18n="ios_s7"></span>
           <span class="why" data-i18n="ios_s7_why"></span>
           <figure>
-            <svg viewBox="0 0 240 150" aria-hidden="true">
-              <rect width="240" height="150" fill="var(--row)"/>
-              <rect x="14" y="16" width="212" height="30" rx="3" fill="none" stroke="var(--row-dim)" stroke-width="1.5"/>
-              <text x="26" y="35" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-ink)">Shortcut Input</text>
-              <rect x="14" y="58" width="212" height="30" rx="3" fill="none" stroke="var(--brand)" stroke-width="2.5"/>
-              <text x="26" y="77" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-ink)">Type</text>
-              <text x="150" y="77" font-family="Space Grotesk, sans-serif" font-size="11" font-weight="700" fill="var(--brand)">Text</text>
-              <path d="M196 68l6 5-6 5" fill="none" stroke="var(--brand)" stroke-width="2"/>
-              <rect x="14" y="100" width="212" height="30" rx="3" fill="none" stroke="var(--row-dim)" stroke-width="1.5"/>
-              <text x="26" y="119" font-family="Space Grotesk, sans-serif" font-size="11" fill="var(--row-dim)">Name</text>
+            <svg class="shot" viewBox="0 0 300 250" aria-hidden="true">
+              <rect width="300" height="250" rx="10" fill="#F2F2F7"/>
+              <rect x="12" y="12" width="276" height="30" rx="10" fill="#fff"/>
+              <text x="26" y="32" font-size="11" font-weight="700" fill="#000">Shortcut Input</text>
+              <rect x="12" y="52" width="276" height="40" rx="10" fill="#fff" stroke="#E9E64A" stroke-width="3"/>
+              <text x="26" y="77" font-size="11" fill="#000">Type</text>
+              <text x="214" y="77" font-size="11" font-weight="700" fill="#2F80ED">Text</text>
+              <path d="M266 68l5 5-5 5" stroke="#8E8E93" stroke-width="1.6" fill="none"/>
+              <rect x="12" y="104" width="276" height="34" rx="10" fill="#fff"/>
+              <text x="26" y="125" font-size="11" fill="#000">Name</text>
+              <text x="240" y="125" font-size="11" fill="#8E8E93">Input</text>
+              <rect x="12" y="150" width="276" height="86" rx="10" fill="#fff"/>
+              <text x="26" y="170" font-size="10" fill="#8E8E93">Type</text>
+              <rect x="26" y="180" width="72" height="22" rx="5" fill="#2F80ED"/>
+              <text x="46" y="195" font-size="10" font-weight="700" fill="#fff">Text</text>
+              <rect x="106" y="180" width="72" height="22" rx="5" fill="#F2F2F7"/>
+              <text x="130" y="195" font-size="10" fill="#8E8E93">File</text>
+              <rect x="186" y="180" width="72" height="22" rx="5" fill="#F2F2F7"/>
+              <text x="204" y="195" font-size="10" fill="#8E8E93">Article</text>
             </svg>
           </figure>
         </li>
@@ -124,11 +164,34 @@
     </section>
 
     <section class="part">
-      <div class="part-head"><span class="part-num">3</span><h2 data-i18n="ios_part_three"></h2></div>
+      <div class="part-head"><span class="part-num">2</span><h2 data-i18n="ios_part_three"></h2></div>
       <ol class="steps">
         <li data-i18n="ios_u1"></li>
         <li data-i18n="ios_u2"></li>
-        <li data-i18n="ios_u3"></li>
+        <li>
+          <span data-i18n="ios_u3"></span>
+          <figure>
+            <svg class="shot" viewBox="0 0 300 250" aria-hidden="true">
+              <rect width="300" height="250" rx="10" fill="#1C1C1E"/>
+              <rect x="12" y="12" width="276" height="40" rx="10" fill="#2C2C2E"/>
+              <rect x="22" y="20" width="24" height="24" rx="5" fill="#FE2C55"/>
+              <text x="56" y="31" font-size="10.5" font-weight="600" fill="#fff">TikTok video</text>
+              <text x="56" y="44" font-size="9.5" fill="#8E8E93">tiktok.com</text>
+              <rect x="12" y="64" width="276" height="72" rx="10" fill="#2C2C2E"/>
+              <rect x="24" y="76" width="42" height="42" rx="10" fill="#3A3A3C"/>
+              <rect x="76" y="76" width="42" height="42" rx="10" fill="#3A3A3C"/>
+              <rect x="128" y="76" width="42" height="42" rx="10" fill="#3A3A3C"/>
+              <rect x="180" y="76" width="42" height="42" rx="10" fill="#E9E64A"/>
+              <rect x="190" y="90" width="22" height="14" rx="2" fill="none" stroke="#121212" stroke-width="2"/>
+              <circle cx="196" cy="97" r="2.4" fill="#121212"/><circle cx="206" cy="97" r="2.4" fill="#121212"/>
+              <text x="181" y="132" font-size="8.5" font-weight="700" fill="#E9E64A">Syntracks</text>
+              <rect x="12" y="148" width="276" height="34" rx="10" fill="#2C2C2E"/>
+              <text x="26" y="169" font-size="11" fill="#fff">Copy</text>
+              <rect x="12" y="190" width="276" height="34" rx="10" fill="#2C2C2E"/>
+              <text x="26" y="211" font-size="11" fill="#fff">Edit Actions...</text>
+            </svg>
+          </figure>
+        </li>
       </ol>
     </section>
 
@@ -141,9 +204,6 @@
       <details><summary data-i18n="ios_q_play"></summary><p data-i18n="ios_a_play"></p></details>
     </section>
 
-    <p style="margin-top:30px">
-      <a href="/" style="color:var(--ink);font-weight:600" data-i18n="ios_back"></a>
-    </p>
   </div>
 </div>
 
@@ -171,7 +231,7 @@ function applyText() {
 }
 
 function showToken(value) {
-  localStorage.setItem("token", value);
+  localStorage.setItem("ios_token", value);
   hasToken = true;
   $("token").textContent = value;
   $("copy-token").textContent = T("copy");
@@ -243,7 +303,7 @@ async function copyText(button, text) {
 (async function boot() {
   try { I18N = await (await fetch("/i18n.json")).json(); } catch { I18N = {}; }
   $("target-url").textContent = `${location.origin}/add`;
-  const stored = localStorage.getItem("token");
+  const stored = localStorage.getItem("ios_token");
   if (stored) { hasToken = true; $("token").textContent = stored; }
   applyText();
   for (const button of document.querySelectorAll(".mini-copy")) {
