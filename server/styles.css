@@ -224,3 +224,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px;
 .adm-btn.danger:hover { border-color: rgba(254,44,85,.5); }
 .adm-key { font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 14px; font-weight: 600; }
 .libtabs { display: flex; gap: 18px; margin-bottom: 4px; }
+
+select.btn-ghost { appearance: none; -webkit-appearance: none; text-align: center; text-align-last: center;
+  font-family: inherit; }
+select.btn-ghost option { background: #16161c; color: var(--text); }

@@ -22,7 +22,6 @@ from urllib.request import urlopen
 BASE = Path(__file__).resolve().parent
 TOKEN = (BASE / "token.txt").read_text().strip()
 USERS_FILE = BASE / "users.json"
-INVITES_FILE = BASE / "invites.json"
 SONGS_DIR = BASE / "songs"
 SONGS_DIR.mkdir(exist_ok=True)
 URL_RE = re.compile(r"https?://\S+")
@@ -34,6 +33,32 @@ USERS_LOCK = threading.Lock()
 CLIPS = BASE / "clips"
 CLIPS.mkdir(exist_ok=True)
 
+I18N = json.loads((BASE / "i18n.json").read_text(encoding="utf-8"))
+LANGS = ("en", "de", "es", "fr", "pt", "tr")
+
+# Ein Job kostet einen yt-dlp-Download plus bis zu 16 Shazam-Anfragen. Mehr Worker
+# holen die Downloads parallel, die Erkennung selbst bleibt durch SHAZAM_GATE seriell,
+# weil shazamio bei schnellen Serien mit ServerDisconnectedError abbricht.
+WORKERS = 3
+SHAZAM_GATE = threading.Semaphore(1)
+
+DAILY_SONG_LIMIT = 50
+SIGNUPS_PER_HOUR = 5
+SIGNUPS = defaultdict(list)
+SIGNUP_LOCK = threading.Lock()
+
+CACHE_MAX_AGE_DAYS = 14
+CACHE_SWEEP_HOURS = 6
+
+
+def t(key, lang):
+    entry = I18N.get(key)
+    return entry.get(lang) or entry["en"] if entry else key
+
+
+def today():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
 
 def load_users():
     return json.loads(USERS_FILE.read_text(encoding="utf-8")) if USERS_FILE.exists() else {}
@@ -41,14 +66,6 @@ def load_users():
 
 def save_users(users):
     USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def load_invites():
-    return json.loads(INVITES_FILE.read_text(encoding="utf-8")) if INVITES_FILE.exists() else []
-
-
-def save_invites(invites):
-    INVITES_FILE.write_text(json.dumps(invites), encoding="utf-8")
 
 
 def hash_pw(password, salt):
@@ -76,6 +93,28 @@ def user_for_token(token):
 
 def songs_path(username):
     return SONGS_DIR / f"{username}.jsonl"
+
+
+def claim_quota(username):
+    with USERS_LOCK:
+        users = load_users()
+        info = users.get(username)
+        if not info or info.get("admin"):
+            return True
+        quota = info.get("quota") or {}
+        if quota.get("day") != today():
+            quota = {"day": today(), "count": 0}
+        if quota["count"] >= DAILY_SONG_LIMIT:
+            return False
+        quota["count"] += 1
+        info["quota"] = quota
+        save_users(users)
+        return True
+
+
+def may_download(username):
+    info = load_users().get(username, {})
+    return bool(info.get("admin") or info.get("downloads"))
 
 
 def clip_key(url):
@@ -432,7 +471,10 @@ def songs_payload(username):
     songs = [{**s, "original": s.get("original", is_original_sound(s["track"])),
               "name": song_name(s), "clip": clip_key(s["url"])} for s in reversed(load_songs(username))]
     pending = [{"url": u, **info} for u, info in PENDING[username].items()]
-    return {"user": username, "admin": bool(load_users().get(username, {}).get("admin")),
+    info = load_users().get(username, {})
+    return {"user": username, "admin": bool(info.get("admin")), "downloads": may_download(username),
+            "quota": {"used": (info.get("quota") or {}).get("count", 0) if (info.get("quota") or {}).get("day") == today() else 0,
+                      "limit": DAILY_SONG_LIMIT},
             "pending": pending, "songs": songs}
 
 
@@ -441,7 +483,7 @@ def worker():
     while True:
         username, url = JOBS.get()
         try:
-            PENDING[username][url]["stage"] = "Video wird geladen"
+            PENDING[username][url]["stage"] = "loading_video"
             song = extract(url)
             # Schon gespeichertes Video erneut geteilt -> Eintrag rutscht nach oben
             if bump_song(username, lambda s: s["url"] == song["url"]):
@@ -452,15 +494,16 @@ def worker():
                 clip = None
             if clip:
                 # Shazam läuft immer, TikToks eigene Song-Metadaten sind oft falsch oder nur der Sound-Titel
-                PENDING[username][url]["stage"] = "Song wird erkannt"
-                hit = recognize(clip)
+                PENDING[username][url]["stage"] = "identifying"
+                with SHAZAM_GATE:
+                    hit = recognize(clip)
                 if hit:
                     song.update(hit)
                 elif song["original"]:
                     caption = caption_song(song["title"])
                     if caption:
                         song.update({"track": caption, "from_caption": True})
-            PENDING[username][url]["stage"] = "Wird gespeichert"
+            PENDING[username][url]["stage"] = "saving"
             # Gleicher Song aus einem anderen Video landet nicht nochmal in der Liste,
             # der vorhandene Eintrag rutscht stattdessen nach oben
             if song.get("track") and bump_song(
@@ -484,8 +527,36 @@ def worker():
 
 
 class Handler(BaseHTTPRequestHandler):
+    def lang(self):
+        wanted = (parse_qs(urlsplit(self.path).query).get("lang") or [""])[0][:2].lower()
+        if wanted in LANGS:
+            return wanted
+        for part in self.headers.get("Accept-Language", "").split(","):
+            code = part.split(";")[0].strip()[:2].lower()
+            if code in LANGS:
+                return code
+        return "en"
+
+    def client_ip(self):
+        # Hinter Cloudflare und dem Nginx Proxy Manager wäre client_address immer der Proxy,
+        # damit würde ein Limit alle Nutzer zugleich treffen
+        return (self.headers.get("CF-Connecting-IP")
+                or self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                or self.client_address[0])
+
+    def claim_signup(self):
+        now = datetime.now(timezone.utc).timestamp()
+        with SIGNUP_LOCK:
+            recent = [s for s in SIGNUPS[self.client_ip()] if now - s < 3600]
+            SIGNUPS[self.client_ip()] = recent
+            if len(recent) >= SIGNUPS_PER_HOUR:
+                return False
+            recent.append(now)
+            return True
+
     def reply(self, code, text, content_type="text/plain; charset=utf-8", no_store=False):
-        body = text.encode()
+        # Bekannte Schlüssel werden übersetzt, JSON-Nutzlasten gehen unverändert durch
+        body = (t(text, self.lang()) if text in I18N else text).encode()
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         if no_store:
@@ -546,58 +617,60 @@ class Handler(BaseHTTPRequestHandler):
             return self.handle_auth(path)
         username = self.token_user()
         if not username:
-            return self.reply(401, "Nicht angemeldet")
+            return self.reply(401, "not_signed_in")
         if path == "/add":
             url = tiktok_url(self.body())
             if not url:
-                return self.reply(400, "Kein TikTok-Link im geteilten Text")
+                return self.reply(400, "no_tiktok_link")
+            if not claim_quota(username):
+                return self.reply(429, "daily_limit_reached")
             if url not in PENDING[username]:
                 PENDING[username][url] = {"queued_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                          "stage": "Wartet"}
+                                          "stage": "waiting"}
                 JOBS.put((username, url))
-            return self.reply(200, "Gespeichert, Song wird im Hintergrund erkannt")
+            return self.reply(200, "queued")
         if path == "/save-similar":
             try:
                 track = json.loads(self.body())
             except ValueError:
-                return self.reply(400, "Kein JSON")
+                return self.reply(400, "no_json")
             append_song(username, {
                 "saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "track": track.get("track"), "original": False, "similar": True, "favorite": True,
                 "artist": track.get("artist"), "title": None, "url": track.get("url") or "",
                 "preview": track.get("preview"), "artwork": track.get("artwork"),
             })
-            return self.reply(200, "In deine Favoriten gespeichert")
+            return self.reply(200, "saved_to_favorites")
         if path == "/favorite":
             try:
                 data = json.loads(self.body())
                 saved_at, value = str(data["saved_at"]), bool(data["value"])
             except (ValueError, KeyError):
-                return self.reply(400, "saved_at und value nötig")
+                return self.reply(400, "favorite_fields_missing")
             updated = [{**s, "favorite": value} if s["saved_at"] == saved_at else s
                        for s in load_songs(username)]
             with FILE_LOCK:
                 songs_path(username).write_text(
                     "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in updated), encoding="utf-8")
-            return self.reply(200, "Favorit aktualisiert")
+            return self.reply(200, "favorite_updated")
         if path == "/delete":
             saved_at = self.body().strip()
             remaining = [s for s in load_songs(username) if s["saved_at"] != saved_at]
             with FILE_LOCK:
                 songs_path(username).write_text(
                     "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in remaining), encoding="utf-8")
-            return self.reply(200, "Eintrag entfernt")
+            return self.reply(200, "entry_removed")
         if path == "/rename":
             try:
                 new = str(json.loads(self.body())["new"]).strip().lower()
             except (ValueError, KeyError):
-                return self.reply(400, "Neuer Name fehlt")
+                return self.reply(400, "new_name_missing")
             if not re.fullmatch(r"[a-z0-9_.]{3,20}", new):
-                return self.reply(400, "Name 3-20 Zeichen, nur a-z 0-9 _ .")
+                return self.reply(400, "username_rules")
             with USERS_LOCK:
                 users = load_users()
                 if new in users:
-                    return self.reply(409, "Name vergeben")
+                    return self.reply(409, "name_taken")
                 users[new] = users.pop(username)
                 if songs_path(username).exists():
                     shutil.move(str(songs_path(username)), str(songs_path(new)))
@@ -608,14 +681,14 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.loads(self.body())
                 old, new = str(data["old"]), str(data["new"])
             except (ValueError, KeyError):
-                return self.reply(400, "Altes und neues Passwort fehlen")
+                return self.reply(400, "passwords_missing")
             if len(new) < 6:
-                return self.reply(400, "Neues Passwort mindestens 6 Zeichen")
+                return self.reply(400, "password_too_short")
             with USERS_LOCK:
                 users = load_users()
                 info = users[username]
                 if not compare_digest(hash_pw(old, info["salt"]), info["hash"]):
-                    return self.reply(401, "Altes Passwort falsch")
+                    return self.reply(401, "old_password_wrong")
                 info["salt"] = secrets.token_hex(16)
                 info["hash"] = hash_pw(new, info["salt"])
                 # Passwortwechsel wirft alle anderen Sitzungen raus, nur die eigene bleibt
@@ -623,58 +696,57 @@ class Handler(BaseHTTPRequestHandler):
                 info["tokens"] = [own]
                 info.pop("token", None)
                 save_users(users)
-            return self.reply(200, "Passwort geändert, andere Geräte wurden abgemeldet")
+            return self.reply(200, "password_changed")
         if path == "/admin/delete-user":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
+                return self.reply(403, "not_admin")
             target = self.body().strip().lower()
             if target == username:
-                return self.reply(400, "Eigenes Konto nicht löschbar")
+                return self.reply(400, "cannot_delete_self")
             with USERS_LOCK:
                 users = load_users()
                 if target not in users:
-                    return self.reply(404, "Unbekannter Nutzer")
+                    return self.reply(404, "unknown_user")
                 users.pop(target)
                 songs_path(target).unlink(missing_ok=True)
                 save_users(users)
-            return self.reply(200, "Konto gelöscht")
-        if path == "/admin/create-invite":
+            return self.reply(200, "account_deleted")
+        if path == "/admin/set-downloads":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
-            key = secrets.token_urlsafe(6)
+                return self.reply(403, "not_admin")
+            try:
+                data = json.loads(self.body())
+                target, value = str(data["user"]).strip().lower(), bool(data["value"])
+            except (ValueError, KeyError):
+                return self.reply(400, "no_json")
             with USERS_LOCK:
-                save_invites(load_invites() + [key])
-            return self.reply(200, json.dumps({
-                "key": key, "link": f"https://syntracks.xsyntachs.de/?invite={key}",
-            }), "application/json")
-        if path == "/admin/delete-invite":
-            if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
-            key = self.body().strip()
-            with USERS_LOCK:
-                save_invites([k for k in load_invites() if k != key])
-            return self.reply(200, "Einladung gelöscht")
+                users = load_users()
+                if target not in users:
+                    return self.reply(404, "unknown_user")
+                users[target]["downloads"] = value
+                save_users(users)
+            return self.reply(200, json.dumps({"user": target, "downloads": value}), "application/json")
         if path == "/admin/reset-password":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
+                return self.reply(403, "not_admin")
             try:
                 data = json.loads(self.body())
                 target, new = str(data["user"]).strip().lower(), str(data["new"])
             except (ValueError, KeyError):
-                return self.reply(400, "Nutzer und neues Passwort fehlen")
+                return self.reply(400, "user_and_password_missing")
             if len(new) < 6:
-                return self.reply(400, "Passwort mindestens 6 Zeichen")
+                return self.reply(400, "password_too_short")
             with USERS_LOCK:
                 users = load_users()
                 if target not in users:
-                    return self.reply(404, "Unbekannter Nutzer")
+                    return self.reply(404, "unknown_user")
                 users[target]["salt"] = secrets.token_hex(16)
                 users[target]["hash"] = hash_pw(new, users[target]["salt"])
                 users[target]["tokens"] = []
                 users[target].pop("token", None)
                 save_users(users)
-            return self.reply(200, "Passwort zurückgesetzt, alle Geräte abgemeldet")
-        return self.reply(404, "Nicht gefunden")
+            return self.reply(200, "password_reset")
+        return self.reply(404, "not_found")
 
     def handle_auth(self, path):
         try:
@@ -682,24 +754,18 @@ class Handler(BaseHTTPRequestHandler):
             name = str(data["user"]).strip().lower()
             password = str(data["pass"])
         except (ValueError, KeyError):
-            return self.reply(400, "Benutzername und Passwort nötig")
+            return self.reply(400, "credentials_missing")
         if not re.fullmatch(r"[a-z0-9_.]{3,20}", name):
-            return self.reply(400, "Benutzername 3-20 Zeichen, nur a-z 0-9 _ .")
+            return self.reply(400, "username_rules")
         if len(password) < 6:
-            return self.reply(400, "Passwort mindestens 6 Zeichen")
+            return self.reply(400, "password_too_short")
         with USERS_LOCK:
             users = load_users()
             if path == "/register":
                 if name in users:
-                    return self.reply(409, "Benutzername vergeben")
-                invite = str(data.get("invite", "")).strip()
-                invites = load_invites()
-                # Allererstes Konto (leere users.json) braucht keinen Key, sonst sperrt man sich aus
-                if users:
-                    if invite not in invites:
-                        return self.reply(403, "Einladungs-Key ungültig. Frag einen Admin nach einer Einladung.")
-                    invites.remove(invite)
-                    save_invites(invites)
+                    return self.reply(409, "username_taken")
+                if not self.claim_signup():
+                    return self.reply(429, "too_many_accounts")
                 salt = secrets.token_hex(16)
                 token = secrets.token_hex(24)
                 users[name] = {"salt": salt, "hash": hash_pw(password, salt), "tokens": [token]}
@@ -711,7 +777,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, json.dumps({"token": token, "user": name}), "application/json")
             info = users.get(name)
             if not info or not compare_digest(hash_pw(password, info["salt"]), info["hash"]):
-                return self.reply(401, "Falscher Benutzername oder Passwort")
+                return self.reply(401, "login_failed")
             token = secrets.token_hex(24)
             info["tokens"] = (user_tokens(info) + [token])[-MAX_SESSIONS:]
             info.pop("token", None)
@@ -732,6 +798,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/ios":
             return self.reply(200, (BASE / "ios.html").read_text(encoding="utf-8"),
                               "text/html; charset=utf-8", no_store=True)
+        if path == "/i18n.json":
+            return self.reply(200, json.dumps(I18N, ensure_ascii=False),
+                              "application/json; charset=utf-8", no_store=True)
         if path == "/styles.css":
             return self.reply(200, (BASE / "styles.css").read_text(encoding="utf-8"),
                               "text/css; charset=utf-8", no_store=True)
@@ -755,78 +824,79 @@ class Handler(BaseHTTPRequestHandler):
             return
         username = self.token_user()
         if not username:
-            return self.reply(401, "Nicht angemeldet")
+            return self.reply(401, "not_signed_in")
         if path == "/songs":
             return self.reply(200, json.dumps(songs_payload(username), ensure_ascii=False), "application/json")
         if path == "/admin/user-songs":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
+                return self.reply(403, "not_admin")
             target = (parse_qs(urlsplit(self.path).query).get("user") or [""])[0]
             if target not in load_users():
-                return self.reply(404, "Unbekannter Nutzer")
+                return self.reply(404, "unknown_user")
             return self.reply(200, json.dumps(songs_payload(target), ensure_ascii=False), "application/json")
         if path == "/admin/user-recommendations":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
+                return self.reply(403, "not_admin")
             target = (parse_qs(urlsplit(self.path).query).get("user") or [""])[0]
             if target not in load_users():
-                return self.reply(404, "Unbekannter Nutzer")
+                return self.reply(404, "unknown_user")
             try:
                 tracks = recommendations(target)
             except Exception as e:
-                return self.reply(502, f"Empfehlungen nicht verfügbar: {e}")
+                return self.reply(502, f"{t('recommendations_unavailable', self.lang())}: {e}")
             return self.reply(200, json.dumps({"recommendations": tracks}, ensure_ascii=False),
                               "application/json")
         if path == "/admin/users":
             if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
+                return self.reply(403, "not_admin")
             overview = [{"name": name, "admin": bool(info.get("admin")),
+                         "downloads": bool(info.get("admin") or info.get("downloads")),
                          "songs": len(load_songs(name))} for name, info in sorted(load_users().items())]
             return self.reply(200, json.dumps({"users": overview}, ensure_ascii=False), "application/json")
-        if path == "/admin/invites":
-            if not load_users().get(username, {}).get("admin"):
-                return self.reply(403, "Kein Admin")
-            return self.reply(200, json.dumps({"invites": load_invites()}), "application/json")
         if path == "/recommendations":
             try:
                 tracks = recommendations(username)
             except Exception as e:
-                return self.reply(502, f"Empfehlungen nicht verfügbar: {e}")
+                return self.reply(502, f"{t('recommendations_unavailable', self.lang())}: {e}")
             return self.reply(200, json.dumps({"recommendations": tracks}, ensure_ascii=False),
                               "application/json")
         if path == "/similar":
             match = find_song(username, self.query_id())
             if not match:
-                return self.reply(404, "Nicht gefunden")
+                return self.reply(404, "not_found")
             try:
                 tracks = similar_tracks(match["artist"], song_name(match))
             except Exception as e:
-                return self.reply(502, f"Deezer nicht erreichbar: {e}")
+                return self.reply(502, f"{t('deezer_unreachable', self.lang())}: {e}")
             return self.reply(200, json.dumps({"similar": tracks}, ensure_ascii=False), "application/json")
         if path in ("/full", "/download-mp3"):
+            if not may_download(username):
+                return self.reply(403, "downloads_locked")
             match = find_song(username, self.query_id())
             if not match:
-                return self.reply(404, "Nicht gefunden")
+                return self.reply(404, "not_found")
             try:
                 full = download_full(match)
             except Exception as e:
-                return self.reply(502, f"Song nicht verfügbar: {e}")
+                return self.reply(502, f"{t('song_unavailable', self.lang())}: {e}")
             fname = safe_name(f"{match['artist']} - {song_name(match)}.mp3") if path == "/download-mp3" else None
             return self.send_file(full.read_bytes(), "audio/mpeg", fname)
         if path == "/download-mp4":
+            if not may_download(username):
+                return self.reply(403, "downloads_locked")
             match = find_song(username, self.query_id())
             if not match:
-                return self.reply(404, "Nicht gefunden")
+                return self.reply(404, "not_found")
             try:
                 video = download_video(match["url"])
             except Exception as e:
-                return self.reply(502, f"Video nicht verfügbar: {e}")
+                return self.reply(502, f"{t('video_unavailable', self.lang())}: {e}")
             return self.send_file(video.read_bytes(), "video/mp4",
                                   safe_name(f"{match['artist']} - {song_name(match)}.mp4"))
         if path == "/preview":
             match = find_song(username, self.query_id())
             if not match:
-                return self.reply(404, "Nicht gefunden")
+                return self.reply(404, "not_found")
             name = song_name(match)
             preview = match.get("preview")
             if match.get("similar"):
@@ -850,15 +920,27 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 download_clip(match["url"])
             except Exception as e:
-                return self.reply(502, f"Clip nicht verfügbar: {e}")
+                return self.reply(502, f"{t('clip_unavailable', self.lang())}: {e}")
             return self.send_file((CLIPS / f"{clip_key(match['url'])}.mp3").read_bytes(), "audio/mpeg")
-        return self.reply(404, "Nicht gefunden")
+        return self.reply(404, "not_found")
 
 
 def safe_name(name):
     return re.sub(r'[<>:"/\\|?*]', "_", name)
 
 
+def sweep_cache():
+    # Ohne das wächst clips/ mit jedem geteilten Video unbegrenzt weiter
+    while True:
+        cutoff = datetime.now(timezone.utc).timestamp() - CACHE_MAX_AGE_DAYS * 86400
+        for path in CLIPS.iterdir():
+            if path.is_file() and path.stat().st_mtime < cutoff:
+                path.unlink(missing_ok=True)
+        threading.Event().wait(CACHE_SWEEP_HOURS * 3600)
+
+
 if __name__ == "__main__":
-    threading.Thread(target=worker, daemon=True).start()
+    for _ in range(WORKERS):
+        threading.Thread(target=worker, daemon=True).start()
+    threading.Thread(target=sweep_cache, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", 8737), Handler).serve_forever()

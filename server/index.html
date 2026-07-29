@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=50">
+<link rel="stylesheet" href="/styles.css?v=51">
 </head>
 <body>
 <div class="aurora"></div>
@@ -18,28 +18,28 @@
     <div class="login-head">
       <img src="/logo.png" alt="Syntracks" style="width:84px;height:84px;border-radius:20px">
       <h2 class="display">Syntracks</h2>
-      <div class="sub" id="login-mode">Anmelden</div>
+      <div class="sub" id="login-mode">Sign in</div>
     </div>
-    <input type="text" id="user" placeholder="Benutzername" autocomplete="username">
-    <input type="password" id="pass" placeholder="Passwort" autocomplete="current-password">
-    <input type="text" id="invite" placeholder="Einladungs-Key" autocomplete="off" class="hidden">
+    <input type="text" id="user" data-ph="username" autocomplete="username">
+    <input type="password" id="pass" data-ph="password" autocomplete="current-password">
     <div class="err" id="login-err"></div>
-    <button class="btn-primary" id="login-btn">Anmelden</button>
-    <button class="link-btn" id="toggle-register">Neu hier? Konto erstellen</button>
+    <button class="btn-primary" id="login-btn">Sign in</button>
+    <button class="link-btn" id="toggle-register">New here? Create an account</button>
     <div class="downloads">
       <a class="btn-ghost" href="/app.apk" download="syntracks.apk">
         <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-        Android App herunterladen</a>
+        <span data-i18n="download_android">Download the Android app</span></a>
       <a class="btn-ghost" href="https://chromewebstore.google.com/detail/hlecjdomfgbhajgeepojmobogolpcllg" target="_blank" rel="noopener">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6H21M8.9 13.7 4.4 5.9M15.1 13.7l-4.5 7.8"/></svg>
-        Browser Extension im Chrome Web Store</a>
+        <span data-i18n="browser_extension">Browser extension on the Chrome Web Store</span></a>
       <a class="btn-ghost" href="/ios">
         <svg class="ic" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M10.6 18.6h2.8"/></svg>
-        Kurzbefehl f&uuml;rs iPhone</a>
+        <span data-i18n="iphone_shortcut">Shortcut for iPhone</span></a>
       <a class="btn-ghost" href="https://github.com/xSyntachs/syntracks" target="_blank" rel="noopener">
         <svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.66.41.35.77 1.05.77 2.12v3.14c0 .3.21.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
-        Code auf GitHub</a>
-      <button class="btn-ghost" id="howto-btn">Wie benutze ich es?</button>
+        <span data-i18n="code_on_github">Code on GitHub</span></a>
+      <button class="btn-ghost" id="howto-btn" data-i18n="howto_title">How do I use this?</button>
+      <select id="lang-pick" class="btn-ghost" aria-label="Language"></select>
     </div>
   </div>
 </div>
@@ -50,13 +50,13 @@
       <h1 class="display">Syntracks</h1>
       <div class="sub" id="whoami"></div>
     </div>
-    <button class="icon-btn" id="profile" title="Konto">
+    <button class="icon-btn" id="profile">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
     </button>
   </div>
   <div class="chips" id="stats"></div>
   <div class="chips" id="filters"></div>
-  <input type="search" id="search" placeholder="Song oder Artist suchen…">
+  <input type="search" id="search" data-ph="search_placeholder">
   <div id="list"></div>
 </div>
 
@@ -68,13 +68,13 @@
   <input type="range" id="pb-seek" min="0" max="1000" value="0">
   <span class="pb-time" id="pb-dur">0:00</span>
   <input type="range" id="pb-vol" min="0" max="100">
-  <button class="icon-btn bare" id="pb-close" title="Stoppen">
+  <button class="icon-btn bare" id="pb-close">
     <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
   </button>
 </div>
 
 <div id="toast"></div>
 <div id="overlays"></div>
-<script src="/app.js?v=50"></script>
+<script src="/app.js?v=51"></script>
 </body>
 </html>

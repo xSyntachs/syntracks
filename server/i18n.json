@@ -1,0 +1,712 @@
+{
+  "old_password_wrong": {
+    "en": "Current password is wrong",
+    "de": "Altes Passwort falsch",
+    "es": "La contraseña actual es incorrecta",
+    "fr": "Le mot de passe actuel est incorrect",
+    "pt": "A senha atual está incorreta",
+    "tr": "Mevcut şifre yanlış"
+  },
+  "passwords_missing": {
+    "en": "Current and new password are required",
+    "de": "Altes und neues Passwort fehlen",
+    "es": "Se requieren la contraseña actual y la nueva",
+    "fr": "Le mot de passe actuel et le nouveau sont requis",
+    "pt": "A senha atual e a nova são obrigatórias",
+    "tr": "Mevcut ve yeni şifre gerekli"
+  },
+  "username_rules": {
+    "en": "Username must be 3-20 characters, only a-z 0-9 _ .",
+    "de": "Benutzername 3-20 Zeichen, nur a-z 0-9 _ .",
+    "es": "El usuario debe tener 3-20 caracteres, solo a-z 0-9 _ .",
+    "fr": "Le nom d'utilisateur doit faire 3-20 caractères, uniquement a-z 0-9 _ .",
+    "pt": "O nome de usuário deve ter 3-20 caracteres, apenas a-z 0-9 _ .",
+    "tr": "Kullanıcı adı 3-20 karakter olmalı, sadece a-z 0-9 _ ."
+  },
+  "credentials_missing": {
+    "en": "Username and password are required",
+    "de": "Benutzername und Passwort nötig",
+    "es": "Se requieren usuario y contraseña",
+    "fr": "Nom d'utilisateur et mot de passe requis",
+    "pt": "Nome de usuário e senha são obrigatórios",
+    "tr": "Kullanıcı adı ve şifre gerekli"
+  },
+  "username_taken": {
+    "en": "Username is already taken",
+    "de": "Benutzername vergeben",
+    "es": "El nombre de usuario ya está en uso",
+    "fr": "Ce nom d'utilisateur est déjà pris",
+    "pt": "Este nome de usuário já está em uso",
+    "tr": "Bu kullanıcı adı alınmış"
+  },
+  "cannot_delete_self": {
+    "en": "You cannot delete your own account",
+    "de": "Eigenes Konto nicht löschbar",
+    "es": "No puedes eliminar tu propia cuenta",
+    "fr": "Vous ne pouvez pas supprimer votre propre compte",
+    "pt": "Você não pode excluir sua própria conta",
+    "tr": "Kendi hesabınızı silemezsiniz"
+  },
+  "invite_deleted": {
+    "en": "Invitation deleted",
+    "de": "Einladung gelöscht",
+    "es": "Invitación eliminada",
+    "fr": "Invitation supprimée",
+    "pt": "Convite excluído",
+    "tr": "Davet silindi"
+  },
+  "entry_removed": {
+    "en": "Entry removed",
+    "de": "Eintrag entfernt",
+    "es": "Entrada eliminada",
+    "fr": "Entrée supprimée",
+    "pt": "Entrada removida",
+    "tr": "Kayıt silindi"
+  },
+  "login_failed": {
+    "en": "Wrong username or password",
+    "de": "Falscher Benutzername oder Passwort",
+    "es": "Usuario o contraseña incorrectos",
+    "fr": "Nom d'utilisateur ou mot de passe incorrect",
+    "pt": "Nome de usuário ou senha incorretos",
+    "tr": "Kullanıcı adı veya şifre yanlış"
+  },
+  "favorite_updated": {
+    "en": "Favorite updated",
+    "de": "Favorit aktualisiert",
+    "es": "Favorito actualizado",
+    "fr": "Favori mis à jour",
+    "pt": "Favorito atualizado",
+    "tr": "Favori güncellendi"
+  },
+  "queued": {
+    "en": "Saved, the song is being identified in the background",
+    "de": "Gespeichert, Song wird im Hintergrund erkannt",
+    "es": "Guardado, la canción se está identificando en segundo plano",
+    "fr": "Enregistré, le titre est en cours d'identification",
+    "pt": "Salvo, a música está sendo identificada em segundo plano",
+    "tr": "Kaydedildi, şarkı arka planda tanımlanıyor"
+  },
+  "saved_to_favorites": {
+    "en": "Saved to your favorites",
+    "de": "In deine Favoriten gespeichert",
+    "es": "Guardado en tus favoritos",
+    "fr": "Ajouté à vos favoris",
+    "pt": "Salvo nos seus favoritos",
+    "tr": "Favorilerinize kaydedildi"
+  },
+  "not_admin": {
+    "en": "Admins only",
+    "de": "Kein Admin",
+    "es": "Solo administradores",
+    "fr": "Réservé aux administrateurs",
+    "pt": "Apenas administradores",
+    "tr": "Sadece yöneticiler"
+  },
+  "no_json": {
+    "en": "Invalid JSON",
+    "de": "Kein JSON",
+    "es": "JSON no válido",
+    "fr": "JSON invalide",
+    "pt": "JSON inválido",
+    "tr": "Geçersiz JSON"
+  },
+  "no_tiktok_link": {
+    "en": "No TikTok link found in the shared text",
+    "de": "Kein TikTok-Link im geteilten Text",
+    "es": "No se encontró ningún enlace de TikTok en el texto compartido",
+    "fr": "Aucun lien TikTok dans le texte partagé",
+    "pt": "Nenhum link do TikTok no texto compartilhado",
+    "tr": "Paylaşılan metinde TikTok bağlantısı yok"
+  },
+  "account_deleted": {
+    "en": "Account deleted",
+    "de": "Konto gelöscht",
+    "es": "Cuenta eliminada",
+    "fr": "Compte supprimé",
+    "pt": "Conta excluída",
+    "tr": "Hesap silindi"
+  },
+  "name_taken": {
+    "en": "That name is already taken",
+    "de": "Name vergeben",
+    "es": "Ese nombre ya está en uso",
+    "fr": "Ce nom est déjà pris",
+    "pt": "Esse nome já está em uso",
+    "tr": "Bu ad alınmış"
+  },
+  "new_name_missing": {
+    "en": "New name is missing",
+    "de": "Neuer Name fehlt",
+    "es": "Falta el nombre nuevo",
+    "fr": "Le nouveau nom est manquant",
+    "pt": "O novo nome está faltando",
+    "tr": "Yeni ad eksik"
+  },
+  "password_too_short": {
+    "en": "Password must be at least 6 characters",
+    "de": "Passwort mindestens 6 Zeichen",
+    "es": "La contraseña debe tener al menos 6 caracteres",
+    "fr": "Le mot de passe doit comporter au moins 6 caractères",
+    "pt": "A senha deve ter pelo menos 6 caracteres",
+    "tr": "Şifre en az 6 karakter olmalı"
+  },
+  "not_signed_in": {
+    "en": "Not signed in",
+    "de": "Nicht angemeldet",
+    "es": "No has iniciado sesión",
+    "fr": "Non connecté",
+    "pt": "Não conectado",
+    "tr": "Giriş yapılmadı"
+  },
+  "not_found": {
+    "en": "Not found",
+    "de": "Nicht gefunden",
+    "es": "No encontrado",
+    "fr": "Introuvable",
+    "pt": "Não encontrado",
+    "tr": "Bulunamadı"
+  },
+  "user_and_password_missing": {
+    "en": "User and new password are required",
+    "de": "Nutzer und neues Passwort fehlen",
+    "es": "Se requieren el usuario y la nueva contraseña",
+    "fr": "L'utilisateur et le nouveau mot de passe sont requis",
+    "pt": "O usuário e a nova senha são obrigatórios",
+    "tr": "Kullanıcı ve yeni şifre gerekli"
+  },
+  "password_changed": {
+    "en": "Password changed, all other devices have been signed out",
+    "de": "Passwort geändert, andere Geräte wurden abgemeldet",
+    "es": "Contraseña cambiada, los demás dispositivos se han desconectado",
+    "fr": "Mot de passe modifié, les autres appareils ont été déconnectés",
+    "pt": "Senha alterada, os outros dispositivos foram desconectados",
+    "tr": "Şifre değiştirildi, diğer cihazların oturumu kapatıldı"
+  },
+  "password_reset": {
+    "en": "Password reset, all devices have been signed out",
+    "de": "Passwort zurückgesetzt, alle Geräte abgemeldet",
+    "es": "Contraseña restablecida, todos los dispositivos se han desconectado",
+    "fr": "Mot de passe réinitialisé, tous les appareils ont été déconnectés",
+    "pt": "Senha redefinida, todos os dispositivos foram desconectados",
+    "tr": "Şifre sıfırlandı, tüm cihazların oturumu kapatıldı"
+  },
+  "unknown_user": {
+    "en": "Unknown user",
+    "de": "Unbekannter Nutzer",
+    "es": "Usuario desconocido",
+    "fr": "Utilisateur inconnu",
+    "pt": "Usuário desconhecido",
+    "tr": "Bilinmeyen kullanıcı"
+  },
+  "favorite_fields_missing": {
+    "en": "saved_at and value are required",
+    "de": "saved_at und value nötig",
+    "es": "saved_at y value son obligatorios",
+    "fr": "saved_at et value sont requis",
+    "pt": "saved_at e value são obrigatórios",
+    "tr": "saved_at ve value gerekli"
+  },
+  "clip_unavailable": {
+    "en": "Clip unavailable",
+    "de": "Clip nicht verfügbar",
+    "es": "Fragmento no disponible",
+    "fr": "Extrait indisponible",
+    "pt": "Trecho indisponível",
+    "tr": "Klip kullanılamıyor"
+  },
+  "deezer_unreachable": {
+    "en": "Deezer is unreachable",
+    "de": "Deezer nicht erreichbar",
+    "es": "Deezer no está disponible",
+    "fr": "Deezer est injoignable",
+    "pt": "O Deezer está indisponível",
+    "tr": "Deezer'a ulaşılamıyor"
+  },
+  "recommendations_unavailable": {
+    "en": "Recommendations unavailable",
+    "de": "Empfehlungen nicht verfügbar",
+    "es": "Recomendaciones no disponibles",
+    "fr": "Recommandations indisponibles",
+    "pt": "Recomendações indisponíveis",
+    "tr": "Öneriler kullanılamıyor"
+  },
+  "song_unavailable": {
+    "en": "Song unavailable",
+    "de": "Song nicht verfügbar",
+    "es": "Canción no disponible",
+    "fr": "Titre indisponible",
+    "pt": "Música indisponível",
+    "tr": "Şarkı kullanılamıyor"
+  },
+  "video_unavailable": {
+    "en": "Video unavailable",
+    "de": "Video nicht verfügbar",
+    "es": "Vídeo no disponible",
+    "fr": "Vidéo indisponible",
+    "pt": "Vídeo indisponível",
+    "tr": "Video kullanılamıyor"
+  },
+  "daily_limit_reached": {
+    "en": "Daily limit reached. You can save more songs tomorrow.",
+    "de": "Tageslimit erreicht. Morgen kannst du wieder Songs speichern.",
+    "es": "Has alcanzado el límite diario. Mañana podrás guardar más canciones.",
+    "fr": "Limite quotidienne atteinte. Vous pourrez enregistrer d'autres titres demain.",
+    "pt": "Limite diário atingido. Amanhã você poderá salvar mais músicas.",
+    "tr": "Günlük sınıra ulaşıldı. Yarın yeniden şarkı kaydedebilirsiniz."
+  },
+  "too_many_accounts": {
+    "en": "Too many accounts created from this connection. Try again later.",
+    "de": "Zu viele Konten über diese Verbindung angelegt. Versuch es später noch einmal.",
+    "es": "Se han creado demasiadas cuentas desde esta conexión. Inténtalo más tarde.",
+    "fr": "Trop de comptes créés depuis cette connexion. Réessayez plus tard.",
+    "pt": "Muitas contas criadas a partir desta conexão. Tente novamente mais tarde.",
+    "tr": "Bu bağlantıdan çok fazla hesap oluşturuldu. Daha sonra tekrar deneyin."
+  },
+  "downloads_locked": {
+    "en": "Downloads are not enabled for this account",
+    "de": "Downloads sind für dieses Konto nicht freigeschaltet",
+    "es": "Las descargas no están habilitadas para esta cuenta",
+    "fr": "Les téléchargements ne sont pas activés pour ce compte",
+    "pt": "Os downloads não estão ativados para esta conta",
+    "tr": "Bu hesap için indirmeler etkin değil"
+  },
+  "waiting": {
+    "en": "Waiting",
+    "de": "Wartet",
+    "es": "En espera",
+    "fr": "En attente",
+    "pt": "Aguardando",
+    "tr": "Bekliyor"
+  },
+  "loading_video": {
+    "en": "Loading video",
+    "de": "Video wird geladen",
+    "es": "Cargando vídeo",
+    "fr": "Chargement de la vidéo",
+    "pt": "Carregando vídeo",
+    "tr": "Video yükleniyor"
+  },
+  "identifying": {
+    "en": "Identifying song",
+    "de": "Song wird erkannt",
+    "es": "Identificando la canción",
+    "fr": "Identification du titre",
+    "pt": "Identificando a música",
+    "tr": "Şarkı tanımlanıyor"
+  },
+  "saving": {
+    "en": "Saving",
+    "de": "Wird gespeichert",
+    "es": "Guardando",
+    "fr": "Enregistrement",
+    "pt": "Salvando",
+    "tr": "Kaydediliyor"
+  },
+
+  "src_official": {
+    "en": "Official song", "de": "Offizieller Song", "es": "Canción oficial",
+    "fr": "Titre officiel", "pt": "Música oficial", "tr": "Resmi şarkı"
+  },
+  "src_shazam": {
+    "en": "Identified by Shazam", "de": "Per Shazam erkannt", "es": "Identificada por Shazam",
+    "fr": "Identifié par Shazam", "pt": "Identificada pelo Shazam", "tr": "Shazam ile tanımlandı"
+  },
+  "src_caption": {
+    "en": "Read from the caption", "de": "Aus Video-Text gelesen", "es": "Leída del texto del vídeo",
+    "fr": "Lu dans la description", "pt": "Lida do texto do vídeo", "tr": "Video metninden okundu"
+  },
+  "src_recommendation": {
+    "en": "Recommendation", "de": "Empfehlung", "es": "Recomendación",
+    "fr": "Recommandation", "pt": "Recomendação", "tr": "Öneri"
+  },
+  "src_unknown": {
+    "en": "Not identified", "de": "Nicht erkannt", "es": "No identificada",
+    "fr": "Non identifié", "pt": "Não identificada", "tr": "Tanımlanamadı"
+  },
+  "filter_all": {
+    "en": "All", "de": "Alle", "es": "Todas", "fr": "Tous", "pt": "Todas", "tr": "Tümü"
+  },
+  "filter_official": {
+    "en": "Official", "de": "Offiziell", "es": "Oficiales", "fr": "Officiels", "pt": "Oficiais", "tr": "Resmi"
+  },
+  "filter_shazam": {
+    "en": "Shazam", "de": "Shazam", "es": "Shazam", "fr": "Shazam", "pt": "Shazam", "tr": "Shazam"
+  },
+  "filter_caption": {
+    "en": "From caption", "de": "Aus Caption", "es": "Del texto", "fr": "Description", "pt": "Do texto", "tr": "Açıklamadan"
+  },
+  "filter_original": {
+    "en": "Original sound", "de": "Original", "es": "Sonido original", "fr": "Son original", "pt": "Som original", "tr": "Orijinal ses"
+  },
+  "filter_prefix": {
+    "en": "Filter", "de": "Filter", "es": "Filtro", "fr": "Filtre", "pt": "Filtro", "tr": "Filtre"
+  },
+  "view_history": {
+    "en": "Song history", "de": "Song Verlauf", "es": "Historial", "fr": "Historique", "pt": "Histórico", "tr": "Şarkı geçmişi"
+  },
+  "view_favorites": {
+    "en": "Favorites", "de": "Favoriten", "es": "Favoritos", "fr": "Favoris", "pt": "Favoritos", "tr": "Favoriler"
+  },
+  "view_recommendations": {
+    "en": "Recommendations", "de": "Empfehlungen", "es": "Recomendaciones", "fr": "Recommandations", "pt": "Recomendações", "tr": "Öneriler"
+  },
+  "playback_failed": {
+    "en": "Playback failed", "de": "Abspielen fehlgeschlagen", "es": "Error de reproducción",
+    "fr": "Échec de la lecture", "pt": "Falha na reprodução", "tr": "Oynatma başarısız"
+  },
+  "session_expired": {
+    "en": "Session expired, please sign in again.", "de": "Sitzung abgelaufen, bitte neu anmelden.",
+    "es": "Sesión caducada, inicia sesión de nuevo.", "fr": "Session expirée, reconnectez-vous.",
+    "pt": "Sessão expirada, entre novamente.", "tr": "Oturum doldu, tekrar giriş yapın."
+  },
+  "minutes_ago": {
+    "en": "{n} min ago", "de": "vor {n} Min.", "es": "hace {n} min", "fr": "il y a {n} min", "pt": "há {n} min", "tr": "{n} dk önce"
+  },
+  "hours_ago": {
+    "en": "{n} h ago", "de": "vor {n} Std.", "es": "hace {n} h", "fr": "il y a {n} h", "pt": "há {n} h", "tr": "{n} sa önce"
+  },
+  "days_ago": {
+    "en": "{n} d ago", "de": "vor {n} Tagen", "es": "hace {n} d", "fr": "il y a {n} j", "pt": "há {n} d", "tr": "{n} gün önce"
+  },
+  "processing_one": {
+    "en": "1 song is being processed…", "de": "1 Song wird verarbeitet…", "es": "Procesando 1 canción…",
+    "fr": "1 titre en cours de traitement…", "pt": "Processando 1 música…", "tr": "1 şarkı işleniyor…"
+  },
+  "processing_many": {
+    "en": "{n} songs are being processed…", "de": "{n} Songs werden verarbeitet…", "es": "Procesando {n} canciones…",
+    "fr": "{n} titres en cours de traitement…", "pt": "Processando {n} músicas…", "tr": "{n} şarkı işleniyor…"
+  },
+  "for_you": {
+    "en": "For you", "de": "Für dich", "es": "Para ti", "fr": "Pour vous", "pt": "Para você", "tr": "Senin için"
+  },
+  "based_on_recent": {
+    "en": "Based on your recent songs", "de": "Auf Basis deiner letzten Songs", "es": "Según tus últimas canciones",
+    "fr": "D'après vos derniers titres", "pt": "Com base nas suas últimas músicas", "tr": "Son şarkılarına göre"
+  },
+  "searching_recs": {
+    "en": "Looking for recommendations…", "de": "Empfehlungen werden gesucht…", "es": "Buscando recomendaciones…",
+    "fr": "Recherche de recommandations…", "pt": "Procurando recomendações…", "tr": "Öneriler aranıyor…"
+  },
+  "no_recs_now": {
+    "en": "No new recommendations right now.", "de": "Gerade keine neuen Empfehlungen.",
+    "es": "Ahora mismo no hay recomendaciones nuevas.", "fr": "Aucune nouvelle recommandation pour le moment.",
+    "pt": "Nenhuma recomendação nova no momento.", "tr": "Şu anda yeni öneri yok."
+  },
+  "nothing_found": {
+    "en": "Nothing found.", "de": "Nichts gefunden.", "es": "No se encontró nada.",
+    "fr": "Aucun résultat.", "pt": "Nada encontrado.", "tr": "Bir şey bulunamadı."
+  },
+  "no_preview": {
+    "en": "No preview available", "de": "Keine Vorschau verfügbar", "es": "Vista previa no disponible",
+    "fr": "Aucun aperçu disponible", "pt": "Prévia indisponível", "tr": "Önizleme yok"
+  },
+  "save_failed": {
+    "en": "Saving failed", "de": "Speichern fehlgeschlagen", "es": "Error al guardar",
+    "fr": "Échec de l'enregistrement", "pt": "Falha ao salvar", "tr": "Kaydetme başarısız"
+  },
+  "add_to_favorites": {
+    "en": "Add to favorites", "de": "Zu Favoriten hinzufügen", "es": "Añadir a favoritos",
+    "fr": "Ajouter aux favoris", "pt": "Adicionar aos favoritos", "tr": "Favorilere ekle"
+  },
+  "remove_from_favorites": {
+    "en": "Remove from favorites", "de": "Aus Favoriten entfernen", "es": "Quitar de favoritos",
+    "fr": "Retirer des favoris", "pt": "Remover dos favoritos", "tr": "Favorilerden çıkar"
+  },
+  "added_to_favorites": {
+    "en": "Added to favorites", "de": "Zu Favoriten hinzugefügt", "es": "Añadida a favoritos",
+    "fr": "Ajouté aux favoris", "pt": "Adicionada aos favoritos", "tr": "Favorilere eklendi"
+  },
+  "removed_from_favorites": {
+    "en": "Removed from favorites", "de": "Aus Favoriten entfernt", "es": "Quitada de favoritos",
+    "fr": "Retiré des favoris", "pt": "Removida dos favoritos", "tr": "Favorilerden çıkarıldı"
+  },
+  "group_play": {
+    "en": "Play", "de": "Abspielen", "es": "Reproducir", "fr": "Lecture", "pt": "Reproduzir", "tr": "Oynat"
+  },
+  "group_collection": {
+    "en": "Collection", "de": "Sammlung", "es": "Colección", "fr": "Collection", "pt": "Coleção", "tr": "Koleksiyon"
+  },
+  "group_discover": {
+    "en": "Discover", "de": "Entdecken", "es": "Descubrir", "fr": "Découvrir", "pt": "Descobrir", "tr": "Keşfet"
+  },
+  "group_download": {
+    "en": "Download", "de": "Herunterladen", "es": "Descargar", "fr": "Télécharger", "pt": "Baixar", "tr": "İndir"
+  },
+  "group_share": {
+    "en": "Share", "de": "Teilen", "es": "Compartir", "fr": "Partager", "pt": "Compartilhar", "tr": "Paylaş"
+  },
+  "play_full_song": {
+    "en": "Play the full song", "de": "Ganzen Song abspielen", "es": "Reproducir la canción completa",
+    "fr": "Écouter le titre entier", "pt": "Tocar a música inteira", "tr": "Şarkının tamamını oynat"
+  },
+  "open_tiktok": {
+    "en": "Open on TikTok", "de": "TikTok öffnen", "es": "Abrir en TikTok", "fr": "Ouvrir sur TikTok",
+    "pt": "Abrir no TikTok", "tr": "TikTok'ta aç"
+  },
+  "open_deezer": {
+    "en": "Open on Deezer", "de": "Auf Deezer öffnen", "es": "Abrir en Deezer", "fr": "Ouvrir sur Deezer",
+    "pt": "Abrir no Deezer", "tr": "Deezer'da aç"
+  },
+  "similar_songs": {
+    "en": "Similar songs", "de": "Ähnliche Songs", "es": "Canciones similares",
+    "fr": "Titres similaires", "pt": "Músicas parecidas", "tr": "Benzer şarkılar"
+  },
+  "search_spotify": {
+    "en": "Search on Spotify", "de": "Auf Spotify suchen", "es": "Buscar en Spotify",
+    "fr": "Rechercher sur Spotify", "pt": "Buscar no Spotify", "tr": "Spotify'da ara"
+  },
+  "search_ytmusic": {
+    "en": "Search on YouTube Music", "de": "Auf YouTube Music suchen", "es": "Buscar en YouTube Music",
+    "fr": "Rechercher sur YouTube Music", "pt": "Buscar no YouTube Music", "tr": "YouTube Music'te ara"
+  },
+  "sound_as_mp3": {
+    "en": "Sound as MP3", "de": "Sound als MP3", "es": "Sonido como MP3", "fr": "Son en MP3",
+    "pt": "Som como MP3", "tr": "Sesi MP3 olarak"
+  },
+  "song_as_mp3": {
+    "en": "Song as MP3", "de": "Song als MP3", "es": "Canción como MP3", "fr": "Titre en MP3",
+    "pt": "Música como MP3", "tr": "Şarkıyı MP3 olarak"
+  },
+  "video_as_mp4": {
+    "en": "TikTok video as MP4", "de": "TikTok-Video als MP4", "es": "Vídeo de TikTok como MP4",
+    "fr": "Vidéo TikTok en MP4", "pt": "Vídeo do TikTok como MP4", "tr": "TikTok videosunu MP4 olarak"
+  },
+  "copy_name": {
+    "en": "Copy name", "de": "Namen kopieren", "es": "Copiar el nombre", "fr": "Copier le nom",
+    "pt": "Copiar o nome", "tr": "Adı kopyala"
+  },
+  "copied": {
+    "en": "Copied", "de": "Kopiert", "es": "Copiado", "fr": "Copié", "pt": "Copiado", "tr": "Kopyalandı"
+  },
+  "delete": {
+    "en": "Delete", "de": "Löschen", "es": "Eliminar", "fr": "Supprimer", "pt": "Excluir", "tr": "Sil"
+  },
+  "song_deleted": {
+    "en": "Song deleted", "de": "Song gelöscht", "es": "Canción eliminada", "fr": "Titre supprimé",
+    "pt": "Música excluída", "tr": "Şarkı silindi"
+  },
+  "change_name": {
+    "en": "Change name", "de": "Name ändern", "es": "Cambiar el nombre", "fr": "Changer de nom",
+    "pt": "Alterar o nome", "tr": "Adı değiştir"
+  },
+  "change_password": {
+    "en": "Change password", "de": "Passwort ändern", "es": "Cambiar la contraseña",
+    "fr": "Changer le mot de passe", "pt": "Alterar a senha", "tr": "Şifreyi değiştir"
+  },
+  "manage_accounts": {
+    "en": "Manage accounts", "de": "Konten verwalten", "es": "Gestionar cuentas",
+    "fr": "Gérer les comptes", "pt": "Gerenciar contas", "tr": "Hesapları yönet"
+  },
+  "language": {
+    "en": "Language", "de": "Sprache", "es": "Idioma", "fr": "Langue", "pt": "Idioma", "tr": "Dil"
+  },
+  "sign_out": {
+    "en": "Sign out", "de": "Abmelden", "es": "Cerrar sesión", "fr": "Se déconnecter", "pt": "Sair", "tr": "Çıkış yap"
+  },
+  "similar_to": {
+    "en": "Similar to {name}", "de": "Ähnlich zu {name}", "es": "Parecidas a {name}",
+    "fr": "Similaire à {name}", "pt": "Parecidas com {name}", "tr": "{name} benzeri"
+  },
+  "searching_similar": {
+    "en": "Looking for similar songs…", "de": "Suche ähnliche Songs…", "es": "Buscando canciones similares…",
+    "fr": "Recherche de titres similaires…", "pt": "Procurando músicas parecidas…", "tr": "Benzer şarkılar aranıyor…"
+  },
+  "your_taste": {
+    "en": "Your taste", "de": "Dein Geschmack", "es": "Tu gusto", "fr": "Vos goûts", "pt": "Seu gosto", "tr": "Zevkin"
+  },
+  "songs_count": {
+    "en": "{n} songs", "de": "{n} Songs", "es": "{n} canciones", "fr": "{n} titres", "pt": "{n} músicas", "tr": "{n} şarkı"
+  },
+  "one_song": {
+    "en": "1 song", "de": "1 Song", "es": "1 canción", "fr": "1 titre", "pt": "1 música", "tr": "1 şarkı"
+  },
+  "this_week": {
+    "en": "{n} this week", "de": "{n} diese Woche", "es": "{n} esta semana",
+    "fr": "{n} cette semaine", "pt": "{n} esta semana", "tr": "bu hafta {n}"
+  },
+  "favorites_count": {
+    "en": "{n} favorites", "de": "{n} Favoriten", "es": "{n} favoritos",
+    "fr": "{n} favoris", "pt": "{n} favoritos", "tr": "{n} favori"
+  },
+  "no_genre_data": {
+    "en": "No genre data yet. Genres are added automatically with every identified song.",
+    "de": "Noch keine Genre-Daten. Genres kommen automatisch bei jedem erkannten Song dazu.",
+    "es": "Aún no hay datos de género. Se añaden automáticamente con cada canción identificada.",
+    "fr": "Pas encore de données de genre. Elles arrivent automatiquement à chaque titre identifié.",
+    "pt": "Ainda sem dados de gênero. Eles chegam automaticamente a cada música identificada.",
+    "tr": "Henüz tür verisi yok. Türler tanımlanan her şarkıyla otomatik eklenir."
+  },
+  "top_artists": {
+    "en": "Top artists", "de": "Top-Artists", "es": "Artistas principales",
+    "fr": "Artistes les plus écoutés", "pt": "Artistas principais", "tr": "En çok dinlenenler"
+  },
+  "new_username": {
+    "en": "New username", "de": "Neuer Benutzername", "es": "Nuevo nombre de usuario",
+    "fr": "Nouveau nom d'utilisateur", "pt": "Novo nome de usuário", "tr": "Yeni kullanıcı adı"
+  },
+  "save": {
+    "en": "Save", "de": "Speichern", "es": "Guardar", "fr": "Enregistrer", "pt": "Salvar", "tr": "Kaydet"
+  },
+  "renamed_to": {
+    "en": "Renamed to @{name}", "de": "Umbenannt in @{name}", "es": "Renombrado a @{name}",
+    "fr": "Renommé en @{name}", "pt": "Renomeado para @{name}", "tr": "@{name} olarak değiştirildi"
+  },
+  "current_password": {
+    "en": "Current password", "de": "Aktuelles Passwort", "es": "Contraseña actual",
+    "fr": "Mot de passe actuel", "pt": "Senha atual", "tr": "Mevcut şifre"
+  },
+  "new_password": {
+    "en": "New password", "de": "Neues Passwort", "es": "Nueva contraseña",
+    "fr": "Nouveau mot de passe", "pt": "Nova senha", "tr": "Yeni şifre"
+  },
+  "confirm_password": {
+    "en": "Confirm new password", "de": "Neues Passwort bestätigen", "es": "Confirmar la nueva contraseña",
+    "fr": "Confirmer le nouveau mot de passe", "pt": "Confirmar a nova senha", "tr": "Yeni şifreyi onayla"
+  },
+  "change": {
+    "en": "Change", "de": "Ändern", "es": "Cambiar", "fr": "Modifier", "pt": "Alterar", "tr": "Değiştir"
+  },
+  "passwords_mismatch": {
+    "en": "Passwords do not match", "de": "Passwörter stimmen nicht überein", "es": "Las contraseñas no coinciden",
+    "fr": "Les mots de passe ne correspondent pas", "pt": "As senhas não coincidem", "tr": "Şifreler eşleşmiyor"
+  },
+  "loading": {
+    "en": "Loading…", "de": "Lädt…", "es": "Cargando…", "fr": "Chargement…", "pt": "Carregando…", "tr": "Yükleniyor…"
+  },
+  "view_action": {
+    "en": "View", "de": "Ansehen", "es": "Ver", "fr": "Voir", "pt": "Ver", "tr": "Görüntüle"
+  },
+  "password_action": {
+    "en": "Password", "de": "Passwort", "es": "Contraseña", "fr": "Mot de passe", "pt": "Senha", "tr": "Şifre"
+  },
+  "reset": {
+    "en": "Reset", "de": "Zurücksetzen", "es": "Restablecer", "fr": "Réinitialiser", "pt": "Redefinir", "tr": "Sıfırla"
+  },
+  "reset_done": {
+    "en": "Reset", "de": "Zurückgesetzt", "es": "Restablecida", "fr": "Réinitialisé", "pt": "Redefinida", "tr": "Sıfırlandı"
+  },
+  "password_for": {
+    "en": "Password for @{name}", "de": "Passwort für @{name}", "es": "Contraseña de @{name}",
+    "fr": "Mot de passe de @{name}", "pt": "Senha de @{name}", "tr": "@{name} için şifre"
+  },
+  "delete_account_confirm": {
+    "en": "Really delete account @{name}?", "de": "Konto @{name} wirklich löschen?",
+    "es": "¿Eliminar de verdad la cuenta @{name}?", "fr": "Supprimer vraiment le compte @{name} ?",
+    "pt": "Excluir mesmo a conta @{name}?", "tr": "@{name} hesabı gerçekten silinsin mi?"
+  },
+  "allow_downloads": {
+    "en": "Allow downloads", "de": "Downloads erlauben", "es": "Permitir descargas",
+    "fr": "Autoriser les téléchargements", "pt": "Permitir downloads", "tr": "İndirmeye izin ver"
+  },
+  "block_downloads": {
+    "en": "Block downloads", "de": "Downloads sperren", "es": "Bloquear descargas",
+    "fr": "Bloquer les téléchargements", "pt": "Bloquear downloads", "tr": "İndirmeyi engelle"
+  },
+  "downloads_enabled": {
+    "en": "Downloads enabled", "de": "Downloads frei", "es": "Descargas habilitadas",
+    "fr": "Téléchargements activés", "pt": "Downloads ativados", "tr": "İndirmeler açık"
+  },
+  "collection_of": {
+    "en": "Collection of @{name}", "de": "Sammlung von @{name}", "es": "Colección de @{name}",
+    "fr": "Collection de @{name}", "pt": "Coleção de @{name}", "tr": "@{name} koleksiyonu"
+  },
+  "no_recommendations": {
+    "en": "No recommendations", "de": "Keine Empfehlungen", "es": "Sin recomendaciones",
+    "fr": "Aucune recommandation", "pt": "Sem recomendações", "tr": "Öneri yok"
+  },
+  "nothing_here": {
+    "en": "Nothing here", "de": "Nichts vorhanden", "es": "No hay nada", "fr": "Rien ici", "pt": "Nada aqui", "tr": "Burada bir şey yok"
+  },
+  "unknown_artist": {
+    "en": "Unknown", "de": "Unbekannt", "es": "Desconocido", "fr": "Inconnu", "pt": "Desconhecido", "tr": "Bilinmiyor"
+  },
+  "sign_in": {
+    "en": "Sign in", "de": "Anmelden", "es": "Iniciar sesión", "fr": "Se connecter", "pt": "Entrar", "tr": "Giriş yap"
+  },
+  "create_account": {
+    "en": "Create account", "de": "Konto erstellen", "es": "Crear cuenta", "fr": "Créer un compte",
+    "pt": "Criar conta", "tr": "Hesap oluştur"
+  },
+  "new_here": {
+    "en": "New here? Create an account", "de": "Neu hier? Konto erstellen", "es": "¿Nuevo por aquí? Crea una cuenta",
+    "fr": "Nouveau ? Créez un compte", "pt": "Novo por aqui? Crie uma conta", "tr": "Yeni misin? Hesap oluştur"
+  },
+  "already_account": {
+    "en": "Already have an account? Sign in", "de": "Schon ein Konto? Anmelden",
+    "es": "¿Ya tienes cuenta? Inicia sesión", "fr": "Déjà un compte ? Connectez-vous",
+    "pt": "Já tem conta? Entre", "tr": "Hesabın var mı? Giriş yap"
+  },
+  "username": {
+    "en": "Username", "de": "Benutzername", "es": "Nombre de usuario", "fr": "Nom d'utilisateur",
+    "pt": "Nome de usuário", "tr": "Kullanıcı adı"
+  },
+  "password": {
+    "en": "Password", "de": "Passwort", "es": "Contraseña", "fr": "Mot de passe", "pt": "Senha", "tr": "Şifre"
+  },
+  "search_placeholder": {
+    "en": "Search song or artist…", "de": "Song oder Artist suchen…", "es": "Buscar canción o artista…",
+    "fr": "Rechercher un titre ou un artiste…", "pt": "Buscar música ou artista…", "tr": "Şarkı veya sanatçı ara…"
+  },
+  "howto_title": {
+    "en": "How do I use this?", "de": "Wie benutze ich es?", "es": "¿Cómo se usa?",
+    "fr": "Comment ça marche ?", "pt": "Como eu uso isto?", "tr": "Bu nasıl kullanılır?"
+  },
+  "howto_account": {
+    "en": "<b>Create an account</b>, here or in the app. It is free and takes a moment.",
+    "de": "<b>Konto erstellen</b>, hier oder in der App. Kostenlos und in einem Moment erledigt.",
+    "es": "<b>Crea una cuenta</b>, aquí o en la app. Es gratis y se hace en un momento.",
+    "fr": "<b>Créez un compte</b>, ici ou dans l'application. C'est gratuit et rapide.",
+    "pt": "<b>Crie uma conta</b>, aqui ou no aplicativo. É grátis e leva um instante.",
+    "tr": "<b>Hesap oluştur</b>, burada ya da uygulamada. Ücretsiz ve bir anda biter."
+  },
+  "howto_android": {
+    "en": "<b>Android:</b> install the app. In TikTok tap <b>Share</b> and then <b>Syntracks</b>. The server identifies the song by itself, slowed versions included.",
+    "de": "<b>Android:</b> App installieren. In TikTok beim Video auf <b>Teilen</b> und dann <b>Syntracks</b> tippen. Der Server erkennt den Song von selbst, auch Slowed-Versionen.",
+    "es": "<b>Android:</b> instala la app. En TikTok pulsa <b>Compartir</b> y luego <b>Syntracks</b>. El servidor identifica la canción solo, también las versiones ralentizadas.",
+    "fr": "<b>Android :</b> installez l'application. Dans TikTok, touchez <b>Partager</b> puis <b>Syntracks</b>. Le serveur identifie le titre tout seul, versions ralenties comprises.",
+    "pt": "<b>Android:</b> instale o aplicativo. No TikTok toque em <b>Compartilhar</b> e depois em <b>Syntracks</b>. O servidor identifica a música sozinho, inclusive versões lentas.",
+    "tr": "<b>Android:</b> uygulamayı kur. TikTok'ta <b>Paylaş</b> ve ardından <b>Syntracks</b>'e dokun. Sunucu şarkıyı kendisi tanır, yavaşlatılmış sürümler dahil."
+  },
+  "howto_browser": {
+    "en": "<b>Browser:</b> install the extension from the Chrome Web Store. After that every TikTok video gets its own save button.",
+    "de": "<b>Browser:</b> Erweiterung aus dem Chrome Web Store installieren. Danach hängt unter jedem TikTok-Video ein eigener Speichern-Button.",
+    "es": "<b>Navegador:</b> instala la extensión desde Chrome Web Store. Después cada vídeo de TikTok tiene su propio botón de guardar.",
+    "fr": "<b>Navigateur :</b> installez l'extension depuis le Chrome Web Store. Ensuite, chaque vidéo TikTok a son propre bouton d'enregistrement.",
+    "pt": "<b>Navegador:</b> instale a extensão na Chrome Web Store. Depois cada vídeo do TikTok ganha seu próprio botão de salvar.",
+    "tr": "<b>Tarayıcı:</b> uzantıyı Chrome Web Store'dan kur. Sonrasında her TikTok videosunun kendi kaydetme düğmesi olur."
+  },
+  "howto_iphone": {
+    "en": "<b>iPhone:</b> follow the shortcut guide. Afterwards Syntracks sits in the TikTok share sheet.",
+    "de": "<b>iPhone:</b> der Kurzbefehl-Anleitung folgen. Danach steht Syntracks im Teilen-Menü von TikTok.",
+    "es": "<b>iPhone:</b> sigue la guía del atajo. Después Syntracks aparece en el menú de compartir de TikTok.",
+    "fr": "<b>iPhone :</b> suivez le guide du raccourci. Ensuite, Syntracks apparaît dans le menu de partage de TikTok.",
+    "pt": "<b>iPhone:</b> siga o guia do atalho. Depois o Syntracks aparece no menu de compartilhamento do TikTok.",
+    "tr": "<b>iPhone:</b> kısayol rehberini izle. Sonrasında Syntracks TikTok'un paylaşım menüsünde yer alır."
+  },
+  "howto_collection": {
+    "en": "Your collection lives here and in the app, with previews, recommendations and statistics.",
+    "de": "Deine Sammlung liegt hier und in der App, mit Anhören, Empfehlungen und Statistik.",
+    "es": "Tu colección está aquí y en la app, con escucha previa, recomendaciones y estadísticas.",
+    "fr": "Votre collection se trouve ici et dans l'application, avec écoute, recommandations et statistiques.",
+    "pt": "Sua coleção fica aqui e no aplicativo, com prévia, recomendações e estatísticas.",
+    "tr": "Koleksiyonun burada ve uygulamada, önizleme, öneriler ve istatistiklerle birlikte."
+  },
+  "download_android": {
+    "en": "Download the Android app", "de": "Android App herunterladen", "es": "Descargar la app de Android",
+    "fr": "Télécharger l'application Android", "pt": "Baixar o aplicativo Android", "tr": "Android uygulamasını indir"
+  },
+  "browser_extension": {
+    "en": "Browser extension on the Chrome Web Store", "de": "Browser Extension im Chrome Web Store",
+    "es": "Extensión de navegador en Chrome Web Store", "fr": "Extension de navigateur sur le Chrome Web Store",
+    "pt": "Extensão de navegador na Chrome Web Store", "tr": "Chrome Web Store'da tarayıcı uzantısı"
+  },
+  "iphone_shortcut": {
+    "en": "Shortcut for iPhone", "de": "Kurzbefehl fürs iPhone", "es": "Atajo para iPhone",
+    "fr": "Raccourci pour iPhone", "pt": "Atalho para iPhone", "tr": "iPhone için kısayol"
+  },
+  "code_on_github": {
+    "en": "Code on GitHub", "de": "Code auf GitHub", "es": "Código en GitHub",
+    "fr": "Code sur GitHub", "pt": "Código no GitHub", "tr": "GitHub'da kod"
+  }
+}

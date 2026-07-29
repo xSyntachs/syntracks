@@ -1,8 +1,18 @@
 const $ = (id) => document.getElementById(id);
 let token = localStorage.getItem("token");
 let userName = localStorage.getItem("user") || "";
-let isAdmin = false, songs = [], lastPending = [], filter = "ALLE", view = "SONGS", registerMode = false;
+let isAdmin = false, mayDownload = false, songs = [], lastPending = [], filter = "ALL", view = "SONGS", registerMode = false;
 let playing = null, pollTimer = null;
+
+const LANGS = { en: "English", de: "Deutsch", es: "Español", fr: "Français", pt: "Português", tr: "Türkçe" };
+let LANG = localStorage.getItem("lang") || (navigator.language || "en").slice(0, 2).toLowerCase();
+if (!LANGS[LANG]) LANG = "en";
+let I18N = {};
+function T(key, vars) {
+  let text = (I18N[key] && (I18N[key][LANG] || I18N[key].en)) || key;
+  for (const name in vars || {}) text = text.replace(`{${name}}`, vars[name]);
+  return text;
+}
 
 const audio = new Audio();
 // Gehör ist logarithmisch: Regler-Wert quadriert ergibt eine brauchbare Lautstärkekurve
@@ -18,17 +28,18 @@ const IC = {
   note: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
 };
 
-const SOURCES = {
-  TIKTOK:  { label: "Offizieller Song", color: "rgba(254,44,85,.5)" },
-  SHAZAM:  { label: "Per Shazam erkannt", color: "rgba(120,40,200,.6)" },
-  CAPTION: { label: "Aus Video-Text gelesen", color: "rgba(245,197,66,.45)" },
-  SIMILAR: { label: "Empfehlung", color: "rgba(76,217,100,.45)" },
-  ORIGINAL:{ label: "Nicht erkannt", color: "rgba(255,255,255,.18)" },
+const SOURCE_COLOR = {
+  TIKTOK: "rgba(254,44,85,.5)", SHAZAM: "rgba(120,40,200,.6)", CAPTION: "rgba(245,197,66,.45)",
+  SIMILAR: "rgba(76,217,100,.45)", ORIGINAL: "rgba(255,255,255,.18)",
 };
-const FILTER_LABEL = { ALLE: "Alle", TIKTOK: "Offiziell", SHAZAM: "Shazam",
-                       CAPTION: "Aus Caption", ORIGINAL: "Original" };
-const VIEWS = { SONGS: "Song Verlauf", FAV: "Favoriten", RECS: "Empfehlungen" };
-const STAGE_PROGRESS = { "Wartet": 10, "Video wird geladen": 40, "Song wird erkannt": 75, "Wird gespeichert": 95 };
+const SOURCE_KEY = {
+  TIKTOK: "src_official", SHAZAM: "src_shazam", CAPTION: "src_caption",
+  SIMILAR: "src_recommendation", ORIGINAL: "src_unknown",
+};
+const FILTER_KEY = { ALL: "filter_all", TIKTOK: "filter_official", SHAZAM: "filter_shazam",
+                     CAPTION: "filter_caption", ORIGINAL: "filter_original" };
+const VIEW_KEY = { SONGS: "view_history", FAV: "view_favorites", RECS: "view_recommendations" };
+const STAGE_PROGRESS = { waiting: 10, loading_video: 40, identifying: 75, saving: 95 };
 
 const sourceOf = (s) => s.similar ? "SIMILAR" : s.recognized ? "SHAZAM" : s.from_caption ? "CAPTION"
   : s.original ? "ORIGINAL" : "TIKTOK";
@@ -40,12 +51,12 @@ function toast(text) {
 }
 
 async function api(path, opts = {}) {
-  opts.headers = Object.assign({ "X-Token": token || "" }, opts.headers);
+  opts.headers = Object.assign({ "X-Token": token || "", "Accept-Language": LANG }, opts.headers);
   const r = await fetch(path, opts);
   if (r.status === 401 && token) {
     // Sitzung wurde serverseitig beendet (Anmeldung auf einem anderen Gerät)
     doLogout();
-    $("login-err").textContent = "Sitzung abgelaufen, bitte neu anmelden.";
+    $("login-err").textContent = T("session_expired");
   }
   if (!r.ok) throw new Error(await r.text());
   return r;
@@ -58,9 +69,9 @@ function fmtTime(sec) {
 }
 function relTime(iso) {
   const min = Math.round((Date.now() - new Date(iso)) / 60000);
-  if (min < 60) return `vor ${min} Min.`;
-  if (min < 1440) return `vor ${Math.round(min / 60)} Std.`;
-  return `vor ${Math.round(min / 1440)} Tagen`;
+  if (min < 60) return T("minutes_ago", { n: min });
+  if (min < 1440) return T("hours_ago", { n: Math.round(min / 60) });
+  return T("days_ago", { n: Math.round(min / 1440) });
 }
 
 function show(loggedIn) {
@@ -68,11 +79,25 @@ function show(loggedIn) {
   $("app").classList.toggle("hidden", !loggedIn);
 }
 
+function applyStaticText() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = T(el.dataset.i18n));
+  document.querySelectorAll("[data-ph]").forEach(el => el.placeholder = T(el.dataset.ph));
+  $("lang-pick").innerHTML = Object.entries(LANGS).map(([code, label]) =>
+    `<option value="${code}"${code === LANG ? " selected" : ""}>${label}</option>`).join("");
+  $("lang-pick").onchange = () => switchLang($("lang-pick").value);
+}
+
+function switchLang(code) {
+  localStorage.setItem("lang", code);
+  location.reload();
+}
+
 /* ---------- Player ---------- */
 function playSource(id, src, name, artist, artwork) {
   playing = { clip: id };
   audio.src = src;
-  audio.play().catch(() => { toast("Abspielen fehlgeschlagen"); stopPlay(); });
+  audio.play().catch(() => { toast(T("playback_failed")); stopPlay(); });
   $("pb-cover").style.backgroundImage = artwork ? `url('${artwork}')` : "none";
   $("pb-name").textContent = name;
   $("pb-artist").textContent = artist;
@@ -124,7 +149,7 @@ $("pb-close").onclick = stopPlay;
 async function load() {
   try {
     const data = await (await api("/songs")).json();
-    userName = data.user; isAdmin = data.admin;
+    userName = data.user; isAdmin = data.admin; mayDownload = data.downloads;
     localStorage.setItem("user", userName);
     songs = data.songs;
     lastPending = data.pending;
@@ -133,7 +158,6 @@ async function load() {
     render();
     schedulePoll();
   } catch (e) {
-    if (String(e.message).includes("angemeldet")) { doLogout(); return; }
     $("list").innerHTML = `<div class="sub" style="padding:30px;text-align:center">${esc(e.message)}</div>`;
   }
 }
@@ -145,21 +169,21 @@ function schedulePoll() {
 
 function renderStats() {
   $("stats").innerHTML =
-    `<button class="taste-btn" id="taste">${IC.note} Dein Geschmack</button>` +
+    `<button class="taste-btn" id="taste">${IC.note} ${T("your_taste")}</button>` +
     (view === "SONGS"
-      ? `<span class="chip click ${filter !== "ALLE" ? "active" : ""}" id="filter-btn">Filter: ${FILTER_LABEL[filter]}</span>`
+      ? `<span class="chip click ${filter !== "ALL" ? "active" : ""}" id="filter-btn">${T("filter_prefix")} ${T(FILTER_KEY[filter])}</span>`
       : "");
   $("taste").onclick = openTaste;
   const filterBtn = $("filter-btn");
   if (filterBtn) filterBtn.onclick = (ev) => {
     ev.stopPropagation();
     closeMenu();
-    const items = Object.keys(FILTER_LABEL).map(f =>
-      [FILTER_LABEL[f] + (f === filter ? "  ✓" : ""), () => { filter = f; renderStats(); render(); }]);
+    const items = Object.keys(FILTER_KEY).map(f =>
+      [T(FILTER_KEY[f]) + (f === filter ? "  ✓" : ""), () => { filter = f; renderStats(); render(); }]);
     anchorMenu(buildMenu(items), filterBtn);
   };
-  $("filters").innerHTML = Object.keys(VIEWS).map(v =>
-    `<span class="tab ${v === view ? "active" : ""}" data-v="${v}">${VIEWS[v]}</span>`).join("");
+  $("filters").innerHTML = Object.keys(VIEW_KEY).map(v =>
+    `<span class="tab ${v === view ? "active" : ""}" data-v="${v}">${T(VIEW_KEY[v])}</span>`).join("");
   document.querySelectorAll("#filters .tab").forEach(el =>
     el.onclick = () => { view = el.dataset.v; renderStats(); render(); });
 }
@@ -183,41 +207,41 @@ function render() {
     if (view === "FAV") { if (!s.favorite) return false; }
     else {
       if (src === "SIMILAR") return false;
-      if (filter !== "ALLE" && src !== filter) return false;
+      if (filter !== "ALL" && src !== filter) return false;
     }
     return !q || (s.name || "").toLowerCase().includes(q) || (s.artist || "").toLowerCase().includes(q);
   });
   let html = "";
   if (lastPending.length) {
-    const stage = lastPending[0].stage || "Wartet";
+    const stage = lastPending[0].stage || "waiting";
     html += `<div class="pendcard">
       <div class="pendrow"><div class="spinner"></div>
-        <div>${lastPending.length === 1 ? "1 Song wird verarbeitet…" : lastPending.length + " Songs werden verarbeitet…"}
-          <small>${esc(stage)}</small></div></div>
+        <div>${lastPending.length === 1 ? T("processing_one") : T("processing_many", { n: lastPending.length })}
+          <small>${esc(T(stage))}</small></div></div>
       <div class="pendbar"><div style="width:${STAGE_PROGRESS[stage] || 10}%"></div></div>
     </div>`;
   }
   if (view === "RECS") {
     if (recs === null && !recsLoading) loadRecs();
-    html += `<div class="pendcard"><b style="font-size:14px">Für dich</b>
-      <div class="sub" style="margin-bottom:10px">Auf Basis deiner letzten Songs</div>`;
+    html += `<div class="pendcard"><b style="font-size:14px">${T("for_you")}</b>
+      <div class="sub" style="margin-bottom:10px">${T("based_on_recent")}</div>`;
     html += recs === null
-      ? `<div class="pendrow"><div class="spinner"></div><div>Empfehlungen werden gesucht…</div></div>`
+      ? `<div class="pendrow"><div class="spinner"></div><div>${T("searching_recs")}</div></div>`
       : recs.length
         ? recs.map((t, i) => `<div class="mrow">
             <div class="cover" ${t.artwork ? `style="background-image:url('${esc(t.artwork)}')"` : ""} data-rp="${i}">
               <div class="ply">${playing && playing.clip === "rec:" + i ? IC.pause : IC.play}</div></div>
             <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist)}</span></div>
-            <button class="add" data-ra="${i}" title="Zu Favoriten hinzufügen">+</button>
+            <button class="add" data-ra="${i}" title="${T("add_to_favorites")}">+</button>
           </div>`).join("")
-        : `<div class="sub">Gerade keine neuen Empfehlungen.</div>`;
+        : `<div class="sub">${T("no_recs_now")}</div>`;
     html += `</div>`;
   }
   if (!shown.length && !lastPending.length && view !== "RECS") {
-    html += `<div class="sub" style="padding:56px 0;text-align:center;font-size:15px">Nichts gefunden.</div>`;
+    html += `<div class="sub" style="padding:56px 0;text-align:center;font-size:15px">${T("nothing_found")}</div>`;
   }
   html += shown.map(s => {
-    const src = sourceOf(s), info = SOURCES[src];
+    const src = sourceOf(s);
     const idx = songs.indexOf(s);
     const isPlaying = playing && playing.clip === s.clip;
     return `<div class="card ${isPlaying ? "playing" : ""}">
@@ -225,11 +249,11 @@ function render() {
         <div class="ply">${isPlaying ? IC.pause : IC.play}</div></div>
       <div class="meta">
         <b>${esc(s.name)}</b><span class="artist">${esc(s.artist)}</span>
-        <span class="badge-row"><span class="badge" style="background:${info.color}">${info.label}</span>
-        ${s.favorite ? `<span class="fav-star" title="Favorit">${IC.star}</span>` : ""}
+        <span class="badge-row"><span class="badge" style="background:${SOURCE_COLOR[src]}">${T(SOURCE_KEY[src])}</span>
+        ${s.favorite ? `<span class="fav-star" title="${T("view_favorites")}">${IC.star}</span>` : ""}
         <span class="time">${relTime(s.saved_at)}</span></span>
       </div>
-      <button class="icon-btn bare" data-menu="${idx}" title="Aktionen">${IC.more}</button>
+      <button class="icon-btn bare" data-menu="${idx}">${IC.more}</button>
     </div>`;
   }).join("");
   $("list").innerHTML = html;
@@ -244,7 +268,7 @@ function render() {
   document.querySelectorAll("[data-rp]").forEach(el => el.onclick = () => {
     const t = recs[el.dataset.rp];
     if (playing && playing.clip === "rec:" + el.dataset.rp) { stopPlay(); return; }
-    if (!t.preview) { toast("Keine Vorschau verfügbar"); return; }
+    if (!t.preview) { toast(T("no_preview")); return; }
     playSource("rec:" + el.dataset.rp, t.preview, t.track, t.artist, t.artwork);
   });
   document.querySelectorAll("[data-ra]").forEach(el => el.onclick = async () => {
@@ -252,9 +276,9 @@ function render() {
     try {
       await api("/save-similar", { method: "POST", body: JSON.stringify(t) });
       el.textContent = "✓"; el.classList.add("done");
-      toast("In deine Favoriten gespeichert");
+      toast(T("added_to_favorites"));
       load();
-    } catch (e) { toast("Speichern fehlgeschlagen"); }
+    } catch (e) { toast(T("save_failed")); }
   });
 }
 
@@ -292,38 +316,40 @@ function openSongMenu(song, anchorEl) {
   closeMenu();
   const src = sourceOf(song);
   const isOriginal = src === "ORIGINAL", isSimilar = src === "SIMILAR";
-  const items = [["h", "Abspielen"]];
-  if (!isOriginal) items.push(["Ganzen Song abspielen", () => startPlay(song, true)]);
-  items.push([isSimilar ? "Auf Deezer öffnen" : "TikTok öffnen", () => window.open(song.url, "_blank")]);
-  items.push(["h", "Sammlung"]);
-  items.push([song.favorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen", async () => {
+  const items = [["h", T("group_play")]];
+  if (!isOriginal) items.push([T("play_full_song"), () => startPlay(song, true)]);
+  items.push([isSimilar ? T("open_deezer") : T("open_tiktok"), () => window.open(song.url, "_blank")]);
+  items.push(["h", T("group_collection")]);
+  items.push([song.favorite ? T("remove_from_favorites") : T("add_to_favorites"), async () => {
     await api("/favorite", { method: "POST",
       body: JSON.stringify({ saved_at: song.saved_at, value: !song.favorite }) });
-    toast(song.favorite ? "Aus Favoriten entfernt" : "Zu Favoriten hinzugefügt");
+    toast(song.favorite ? T("removed_from_favorites") : T("added_to_favorites"));
     load();
   }]);
   if (!isOriginal) {
-    items.push(["h", "Entdecken"]);
-    items.push(["Ähnliche Songs", () => openSimilar(song)]);
-    items.push(["Auf Spotify suchen", () =>
+    items.push(["h", T("group_discover")]);
+    items.push([T("similar_songs"), () => openSimilar(song)]);
+    items.push([T("search_spotify"), () =>
       window.open("https://open.spotify.com/search/" + encodeURIComponent(song.artist + " " + song.name), "_blank")]);
-    items.push(["Auf YouTube Music suchen", () =>
+    items.push([T("search_ytmusic"), () =>
       window.open("https://music.youtube.com/search?q=" + encodeURIComponent(song.artist + " " + song.name), "_blank")]);
   }
-  items.push(["h", "Herunterladen"]);
-  items.push([isOriginal ? "Sound als MP3" : "Song als MP3",
-    () => window.open(`/download-mp3?id=${song.clip}&token=${token}`, "_blank")]);
-  if (!isSimilar) items.push(["TikTok-Video als MP4",
-    () => window.open(`/download-mp4?id=${song.clip}&token=${token}`, "_blank")]);
-  items.push(["h", "Teilen"]);
-  items.push(["Namen kopieren", () => {
+  if (mayDownload) {
+    items.push(["h", T("group_download")]);
+    items.push([isOriginal ? T("sound_as_mp3") : T("song_as_mp3"),
+      () => window.open(`/download-mp3?id=${song.clip}&token=${token}`, "_blank")]);
+    if (!isSimilar) items.push([T("video_as_mp4"),
+      () => window.open(`/download-mp4?id=${song.clip}&token=${token}`, "_blank")]);
+  }
+  items.push(["h", T("group_share")]);
+  items.push([T("copy_name"), () => {
     navigator.clipboard.writeText(`${song.artist} - ${song.name}`);
-    toast("Kopiert");
+    toast(T("copied"));
   }]);
-  items.push(["Löschen", async () => {
+  items.push([T("delete"), async () => {
     if (playing && playing.clip === song.clip) stopPlay();
     await api("/delete", { method: "POST", body: song.saved_at });
-    toast("Song gelöscht");
+    toast(T("song_deleted"));
     load();
   }, "danger"]);
   anchorMenu(buildMenu(items), anchorEl);
@@ -333,11 +359,12 @@ $("profile").onclick = (ev) => {
   ev.stopPropagation();
   closeMenu();
   const items = [
-    ["Name ändern", openRename],
-    ["Passwort ändern", openPassword],
+    [T("change_name"), openRename],
+    [T("change_password"), openPassword],
+    [T("language"), openLanguage],
   ];
-  if (isAdmin) items.push(["Konten verwalten", openAdmin]);
-  items.push(["Abmelden", doLogout, "danger"]);
+  if (isAdmin) items.push([T("manage_accounts"), openAdmin]);
+  items.push([T("sign_out"), doLogout, "danger"]);
   anchorMenu(buildMenu(items), $("profile"));
 };
 
@@ -355,19 +382,25 @@ function modal(title, bodyHtml) {
   return { el: ov, close };
 }
 
+function openLanguage() {
+  const m = modal(T("language"), Object.entries(LANGS).map(([code, label]) =>
+    `<button class="btn-ghost" data-lang="${code}" style="margin-bottom:8px">${label}${code === LANG ? "  ✓" : ""}</button>`).join(""));
+  m.el.querySelectorAll("[data-lang]").forEach(el => el.onclick = () => switchLang(el.dataset.lang));
+}
+
 async function openSimilar(seed) {
-  const m = modal(`Ähnlich zu ${esc(seed.name)}`,
-    `<div class="sub" style="padding:12px 0">Suche ähnliche Songs…</div>`);
+  const m = modal(T("similar_to", { name: esc(seed.name) }),
+    `<div class="sub" style="padding:12px 0">${T("searching_similar")}</div>`);
   let tracks;
   try {
     tracks = (await (await api(`/similar?id=${seed.clip}`)).json()).similar;
   } catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
-  if (!tracks.length) { m.el.querySelector(".body").innerHTML = `<div class="sub">Nichts gefunden.</div>`; return; }
+  if (!tracks.length) { m.el.querySelector(".body").innerHTML = `<div class="sub">${T("nothing_found")}</div>`; return; }
   m.el.querySelector(".body").innerHTML = tracks.map((t, i) => `<div class="mrow">
     <div class="cover" ${t.artwork ? `style="background-image:url('${esc(t.artwork)}')"` : ""} data-sp="${i}">
       <div class="ply">${IC.play}</div></div>
     <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist)}</span></div>
-    <button class="add" data-sa="${i}" title="Zu Favoriten hinzufügen">+</button>
+    <button class="add" data-sa="${i}" title="${T("add_to_favorites")}">+</button>
   </div>`).join("");
   const syncIcons = () => m.el.querySelectorAll("[data-sp]").forEach(el =>
     el.querySelector(".ply").innerHTML =
@@ -375,7 +408,7 @@ async function openSimilar(seed) {
   m.el.querySelectorAll("[data-sp]").forEach(el => el.onclick = () => {
     const t = tracks[el.dataset.sp];
     if (playing && playing.clip === "sim:" + el.dataset.sp) { stopPlay(); syncIcons(); return; }
-    if (!t.preview) { toast("Keine Vorschau verfügbar"); return; }
+    if (!t.preview) { toast(T("no_preview")); return; }
     playSource("sim:" + el.dataset.sp, t.preview, t.track, t.artist, t.artwork);
     syncIcons();
   });
@@ -384,9 +417,9 @@ async function openSimilar(seed) {
     try {
       await api("/save-similar", { method: "POST", body: JSON.stringify(t) });
       el.textContent = "✓"; el.classList.add("done");
-      toast("In deine Favoriten gespeichert");
+      toast(T("added_to_favorites"));
       load();
-    } catch (e) { toast("Speichern fehlgeschlagen"); }
+    } catch (e) { toast(T("save_failed")); }
   });
   const origClose = m.close;
   const closeAll = () => { if (playing && String(playing.clip).startsWith("sim:")) stopPlay(); origClose(); };
@@ -404,163 +437,141 @@ function openTaste() {
   const tops = Object.entries(artists).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const week = songs.filter(s => Date.now() - new Date(s.saved_at) < 7 * 864e5).length;
   const favs = songs.filter(s => s.favorite).length;
-  modal("Dein Geschmack",
+  modal(T("your_taste"),
     `<div class="chips" style="margin-bottom:4px">
-       <span class="chip">${songs.length} Songs</span>
-       <span class="chip">${week} diese Woche</span>
-       <span class="chip">${favs} Favoriten</span>
+       <span class="chip">${T("songs_count", { n: songs.length })}</span>
+       <span class="chip">${T("this_week", { n: week })}</span>
+       <span class="chip">${T("favorites_count", { n: favs })}</span>
      </div>` +
     (sorted.length
       ? sorted.map(([g, c]) => `<div><div style="display:flex;font-size:13px;margin-bottom:5px">
           <span style="flex:1">${esc(g)}</span><span style="color:var(--muted)">${c}</span></div>
           <div class="genrebar"><div style="width:${Math.round(c / max * 100)}%"></div></div></div>`).join("")
-      : `<div class="sub">Noch keine Genre-Daten. Genres kommen automatisch bei jedem erkannten Song dazu.</div>`) +
-    `<b style="font-size:14px;margin-top:6px">Top-Artists</b>` +
+      : `<div class="sub">${T("no_genre_data")}</div>`) +
+    `<b style="font-size:14px;margin-top:6px">${T("top_artists")}</b>` +
     tops.map(([a, c]) => `<div style="display:flex;font-size:13px">
-      <span style="flex:1">${esc(a)}</span><span style="color:var(--muted)">${c === 1 ? "1 Song" : c + " Songs"}</span></div>`).join(""));
+      <span style="flex:1">${esc(a)}</span>
+      <span style="color:var(--muted)">${c === 1 ? T("one_song") : T("songs_count", { n: c })}</span></div>`).join(""));
 }
 
 function openRename() {
-  const m = modal("Name ändern",
-    `<input type="text" id="rn" placeholder="Neuer Benutzername"><div class="err" id="rn-err"></div>
-     <button class="btn-primary" id="rn-btn">Speichern</button>`);
+  const m = modal(T("change_name"),
+    `<input type="text" id="rn" placeholder="${T("new_username")}"><div class="err" id="rn-err"></div>
+     <button class="btn-primary" id="rn-btn">${T("save")}</button>`);
   m.el.querySelector("#rn-btn").onclick = async () => {
     try {
       const r = await api("/rename", { method: "POST",
         body: JSON.stringify({ new: m.el.querySelector("#rn").value.trim() }) });
       userName = (await r.json()).user;
       localStorage.setItem("user", userName);
-      toast("Umbenannt in @" + userName);
+      toast(T("renamed_to", { name: userName }));
       m.close(); load();
     } catch (e) { m.el.querySelector("#rn-err").textContent = e.message; }
   };
 }
 
 function openPassword() {
-  const m = modal("Passwort ändern",
-    `<input type="password" id="p-old" placeholder="Aktuelles Passwort">
-     <input type="password" id="p-new" placeholder="Neues Passwort">
-     <input type="password" id="p-conf" placeholder="Neues Passwort bestätigen">
-     <div class="err" id="p-err"></div><button class="btn-primary" id="p-btn">Ändern</button>`);
+  const m = modal(T("change_password"),
+    `<input type="password" id="p-old" placeholder="${T("current_password")}">
+     <input type="password" id="p-new" placeholder="${T("new_password")}">
+     <input type="password" id="p-conf" placeholder="${T("confirm_password")}">
+     <div class="err" id="p-err"></div><button class="btn-primary" id="p-btn">${T("change")}</button>`);
   m.el.querySelector("#p-btn").onclick = async () => {
     const oldPw = m.el.querySelector("#p-old").value,
           newPw = m.el.querySelector("#p-new").value,
           confPw = m.el.querySelector("#p-conf").value;
-    if (newPw !== confPw) { m.el.querySelector("#p-err").textContent = "Passwörter stimmen nicht überein"; return; }
+    if (newPw !== confPw) { m.el.querySelector("#p-err").textContent = T("passwords_mismatch"); return; }
     try {
       await api("/change-password", { method: "POST", body: JSON.stringify({ old: oldPw, new: newPw }) });
-      toast("Passwort geändert");
+      toast(T("change_password"));
       m.close();
     } catch (e) { m.el.querySelector("#p-err").textContent = e.message; }
   };
 }
 
 async function openAdmin() {
-  const m = modal("Konten verwalten", `<div class="sub">Lädt…</div>`);
+  const m = modal(T("manage_accounts"), `<div class="sub">${T("loading")}</div>`);
   async function refresh() {
-    let users, invites;
-    try {
-      users = (await (await api("/admin/users")).json()).users;
-      invites = (await (await api("/admin/invites")).json()).invites;
-    }
+    let users;
+    try { users = (await (await api("/admin/users")).json()).users; }
     catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
     m.el.querySelector(".body").innerHTML = users.map(u => `<div class="adm-row">
       <div class="adm-av">${esc(u.name[0])}</div>
       <div class="meta"><b style="color:${u.admin ? "var(--cyan)" : "inherit"}">@${esc(u.name)}${u.admin ? " · Admin" : ""}</b>
-        <span class="artist">${u.songs} Songs</span></div>
+        <span class="artist">${T("songs_count", { n: u.songs })}${u.downloads ? " · " + T("downloads_enabled") : ""}</span></div>
       <div class="adm-actions">
-        <button class="adm-btn cyan" data-vu="${esc(u.name)}">Ansehen</button>
-        <button class="adm-btn" data-rp2="${esc(u.name)}">Passwort</button>
-        ${u.name !== userName ? `<button class="adm-btn danger" data-du="${esc(u.name)}">Löschen</button>` : ""}
+        <button class="adm-btn cyan" data-vu="${esc(u.name)}">${T("view_action")}</button>
+        <button class="adm-btn" data-rp2="${esc(u.name)}">${T("password_action")}</button>
+        ${u.admin ? "" : `<button class="adm-btn" data-dl="${esc(u.name)}" data-on="${u.downloads ? 1 : 0}">${u.downloads ? T("block_downloads") : T("allow_downloads")}</button>`}
+        ${u.name !== userName ? `<button class="adm-btn danger" data-du="${esc(u.name)}">${T("delete")}</button>` : ""}
       </div>
-    </div>`).join("") + `
-    <div class="sub" style="margin-top:14px">Einladungen (jeder Key gilt für ein Konto)</div>
-    ${invites.map(k => `<div class="adm-row">
-      <div class="adm-av key"><svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="8" cy="14" r="4"/><path d="M11 11 20 2m-4 1 3 3"/></svg></div>
-      <div class="meta"><b class="adm-key">${esc(k)}</b><span class="artist">Noch nicht eingelöst</span></div>
-      <div class="adm-actions">
-        <button class="adm-btn cyan" data-ci="${esc(k)}">Link kopieren</button>
-        <button class="adm-btn danger" data-di="${esc(k)}">Löschen</button>
-      </div>
-    </div>`).join("")}
-    <button class="btn-primary" id="new-invite" style="margin-top:10px">Einladungs-Key erstellen</button>`;
+    </div>`).join("");
     m.el.querySelectorAll("[data-vu]").forEach(el => el.onclick = () => openUserLibrary(el.dataset.vu));
-    m.el.querySelector("#new-invite").onclick = async () => {
-      const created = await (await api("/admin/create-invite", { method: "POST" })).json();
-      await navigator.clipboard.writeText(created.link).catch(() => {});
-      toast("Einladungslink kopiert");
+    m.el.querySelectorAll("[data-dl]").forEach(el => el.onclick = async () => {
+      await api("/admin/set-downloads", { method: "POST",
+        body: JSON.stringify({ user: el.dataset.dl, value: el.dataset.on !== "1" }) });
       refresh();
-    };
-    m.el.querySelectorAll("[data-ci]").forEach(el => el.onclick = async () => {
-      await navigator.clipboard.writeText(`https://syntracks.xsyntachs.de/?invite=${el.dataset.ci}`).catch(() => {});
-      toast("Einladungslink kopiert");
-    });
-    m.el.querySelectorAll("[data-di]").forEach(el => el.onclick = async () => {
-      await api("/admin/delete-invite", { method: "POST", body: el.dataset.di });
-      toast("Einladung gelöscht"); refresh();
     });
     m.el.querySelectorAll("[data-rp2]").forEach(el => el.onclick = () => {
       const target = el.dataset.rp2;
-      const pm = modal("Passwort für @" + esc(target),
-        `<input type="password" id="ap" placeholder="Neues Passwort">
-         <input type="password" id="ap2" placeholder="Neues Passwort bestätigen">
+      const pm = modal(T("password_for", { name: esc(target) }),
+        `<input type="password" id="ap" placeholder="${T("new_password")}">
+         <input type="password" id="ap2" placeholder="${T("confirm_password")}">
          <div class="err" id="ap-err"></div>
-         <button class="btn-primary" id="ap-btn">Zurücksetzen</button>`);
+         <button class="btn-primary" id="ap-btn">${T("reset")}</button>`);
       pm.el.querySelector("#ap-btn").onclick = async () => {
         const p1 = pm.el.querySelector("#ap").value, p2 = pm.el.querySelector("#ap2").value;
-        if (p1 !== p2) { pm.el.querySelector("#ap-err").textContent = "Passwörter stimmen nicht überein"; return; }
+        if (p1 !== p2) { pm.el.querySelector("#ap-err").textContent = T("passwords_mismatch"); return; }
         try {
           await api("/admin/reset-password", { method: "POST",
             body: JSON.stringify({ user: target, new: p1 }) });
-          toast("Zurückgesetzt"); pm.close();
+          toast(T("reset_done")); pm.close();
         } catch (e) { pm.el.querySelector("#ap-err").textContent = e.message; }
       };
     });
     m.el.querySelectorAll("[data-du]").forEach(el => el.onclick = async () => {
-      if (!confirm(`Konto @${el.dataset.du} wirklich löschen?`)) return;
+      if (!confirm(T("delete_account_confirm", { name: el.dataset.du }))) return;
       await api("/admin/delete-user", { method: "POST", body: el.dataset.du });
-      toast("Konto gelöscht"); refresh();
+      refresh();
     });
   }
   refresh();
 }
 
 async function openUserLibrary(name) {
-  const m = modal(`Sammlung von @${esc(name)}`, `<div class="sub">Lädt…</div>`);
+  const m = modal(T("collection_of", { name: esc(name) }), `<div class="sub">${T("loading")}</div>`);
   let songs;
   try { songs = (await (await api(`/admin/user-songs?user=${encodeURIComponent(name)}`)).json()).songs; }
   catch (e) { m.el.querySelector(".body").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
-  let recs = null, tab = "VERLAUF";
-  const badge = s => s.similar ? "Empfehlung" : s.recognized ? "Per Shazam erkannt"
-    : s.from_caption ? "Aus Caption gelesen" : s.original ? "Nicht erkannt" : "Offizieller Song";
+  let recs = null, tab = "SONGS";
   const songRow = s => `<div class="mrow">
     ${s.artwork ? `<img class="cover" src="${esc(s.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
     <div class="meta"><b>${esc(s.name)}${s.favorite ? ` <span style="color:var(--gold)">★</span>` : ""}</b>
-      <span class="artist">${esc(s.artist || "Unbekannt")} · ${badge(s)}</span></div>
+      <span class="artist">${esc(s.artist || T("unknown_artist"))} · ${T(SOURCE_KEY[sourceOf(s)])}</span></div>
   </div>`;
   const recRow = t => `<div class="mrow">
     ${t.artwork ? `<img class="cover" src="${esc(t.artwork)}">` : `<div class="cover" style="background:var(--glass)"></div>`}
-    <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist || "Unbekannt")}</span></div>
+    <div class="meta"><b>${esc(t.track)}</b><span class="artist">${esc(t.artist || T("unknown_artist"))}</span></div>
   </div>`;
-  async function render() {
+  async function renderLib() {
     let rows;
     if (tab === "RECS") {
       if (!recs) {
         try { recs = (await (await api(`/admin/user-recommendations?user=${encodeURIComponent(name)}`)).json()).recommendations; }
         catch { recs = []; }
       }
-      rows = recs.length ? recs.map(recRow).join("") : `<div class="sub">Keine Empfehlungen</div>`;
+      rows = recs.length ? recs.map(recRow).join("") : `<div class="sub">${T("no_recommendations")}</div>`;
     } else {
       const list = tab === "FAV" ? songs.filter(s => s.favorite) : songs;
-      rows = list.length ? list.map(songRow).join("") : `<div class="sub">Nichts vorhanden</div>`;
+      rows = list.length ? list.map(songRow).join("") : `<div class="sub">${T("nothing_here")}</div>`;
     }
     m.el.querySelector(".body").innerHTML = `<div class="libtabs">
-      ${[["VERLAUF", "Song Verlauf"], ["FAV", "Favoriten"], ["RECS", "Empfehlungen"]].map(([k, label]) =>
-        `<span class="tab${tab === k ? " active" : ""}" data-lt="${k}">${label}</span>`).join("")}
+      ${Object.keys(VIEW_KEY).map(k =>
+        `<span class="tab${tab === k ? " active" : ""}" data-lt="${k}">${T(VIEW_KEY[k])}</span>`).join("")}
     </div>` + rows;
-    m.el.querySelectorAll("[data-lt]").forEach(el => el.onclick = () => { tab = el.dataset.lt; render(); });
+    m.el.querySelectorAll("[data-lt]").forEach(el => el.onclick = () => { tab = el.dataset.lt; renderLib(); });
   }
-  render();
+  renderLib();
 }
 
 /* ---------- Auth ---------- */
@@ -569,8 +580,8 @@ async function doAuth() {
   try {
     const r = await fetch(registerMode ? "/register" : "/login", {
       method: "POST",
-      body: JSON.stringify({ user: $("user").value.trim(), pass: $("pass").value,
-                             invite: $("invite").value.trim() }),
+      headers: { "Accept-Language": LANG },
+      body: JSON.stringify({ user: $("user").value.trim(), pass: $("pass").value }),
     });
     if (!r.ok) throw new Error(await r.text());
     const data = await r.json();
@@ -585,33 +596,29 @@ function doLogout() {
   token = null; show(false);
 }
 
-$("howto-btn").onclick = () => modal("Wie benutze ich es?", `<ol class="howto-list">
-  <li><b>Konto erstellen</b>, hier oder in der App. Du brauchst einen Einladungs-Key von einem Admin,
-    mit einem Einladungslink ist er schon ausgefüllt.</li>
-  <li><b>Android:</b> APK herunterladen und installieren. In TikTok beim Video auf <b>Teilen</b> und dann
-    <b>Syntracks</b> tippen, fertig. Der Server erkennt den Song automatisch, auch Slowed-Versionen.</li>
-  <li><b>Browser:</b> Extension laden, in Chrome unter chrome://extensions den Entwicklermodus aktivieren,
-    ZIP entpacken und den Ordner über "Entpackte Erweiterung laden" auswählen. Danach hängt unter jedem
-    TikTok-Video ein eigener Speichern-Button.</li>
-  <li>Deine Sammlung liegt hier und in der App, mit Anhören, Downloads, Empfehlungen und Statistik.</li>
-</ol>`);
-
 $("login-btn").onclick = doAuth;
 $("pass").addEventListener("keydown", e => { if (e.key === "Enter") doAuth(); });
 function setRegisterMode(on) {
   registerMode = on;
-  $("login-mode").textContent = registerMode ? "Konto erstellen" : "Anmelden";
-  $("login-btn").textContent = registerMode ? "Konto erstellen" : "Anmelden";
-  $("toggle-register").textContent = registerMode ? "Schon ein Konto? Anmelden" : "Neu hier? Konto erstellen";
-  $("invite").classList.toggle("hidden", !registerMode);
+  $("login-mode").textContent = registerMode ? T("create_account") : T("sign_in");
+  $("login-btn").textContent = registerMode ? T("create_account") : T("sign_in");
+  $("toggle-register").textContent = registerMode ? T("already_account") : T("new_here");
 }
 $("toggle-register").onclick = () => setRegisterMode(!registerMode);
-const inviteFromLink = new URLSearchParams(location.search).get("invite");
-if (inviteFromLink) {
-  $("invite").value = inviteFromLink;
-  setRegisterMode(true);
-}
 $("search").addEventListener("input", render);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
 
-if (token) { show(true); load(); } else { show(false); }
+async function boot() {
+  try { I18N = await (await fetch("/i18n.json")).json(); } catch (e) { I18N = {}; }
+  applyStaticText();
+  setRegisterMode(false);
+  $("howto-btn").onclick = () => modal(T("howto_title"), `<ol class="howto-list">
+    <li>${T("howto_account")}</li>
+    <li>${T("howto_android")}</li>
+    <li>${T("howto_browser")}</li>
+    <li>${T("howto_iphone")}</li>
+    <li>${T("howto_collection")}</li>
+  </ol>`);
+  if (token) { show(true); load(); } else { show(false); }
+}
+boot();
