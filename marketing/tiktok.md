@@ -31,11 +31,19 @@ does not.
 |---|---|---|
 | 0:00 to 0:03 | The clip everybody knows, sound loud, one line of text on top | Three seconds decide whether the video is shown at all |
 | 0:03 to 0:06 | Same clip continues, text asks the question already in the comments | Recognition before curiosity |
-| 0:06 to 0:12 | Screen recording, share sheet, Syntracks, the name appears | The payoff, uncut, no speed ramp |
-| 0:12 to 0:15 | Artist and title large, then the handle | People screenshot this frame, and rewatches count |
+| 0:06 to 0:07 | The yellow band opens and the cassette turns | One second of motion, the moment people wait for |
+| 0:07 to 0:15 | Cassette, waveform, artist and title on yellow | The payoff frame, and rewatches count |
+
+The app never appears in a video. No interface, no link, no download. A clip that ends on an
+unknown web address reads as a scam and gets scrolled past. The channel answers a question,
+that is all it does, and the app lives in the bio for anyone who wonders how.
 
 No voiceover. Text on screen only, TikTok's own font, white on black bar. Never use the
 robot voice, it reads as low effort.
+
+The yellow band with the turning cassette is the signature. Same position, same colour, same
+motion in every single video. After ten posts people recognise the channel before they read a
+word, and that is worth more than any logo in the corner.
 
 ## First ten videos
 
