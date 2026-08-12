@@ -25,6 +25,8 @@ USERS_FILE = BASE / "users.json"
 SONGS_DIR = BASE / "songs"
 SONGS_DIR.mkdir(exist_ok=True)
 URL_RE = re.compile(r"https?://\S+")
+YTDLP = ["yt-dlp", "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"]
 
 JOBS = queue.Queue()
 PENDING = defaultdict(dict)
@@ -207,7 +209,7 @@ def download_clip(url):
     audio = CLIPS / f"audio_{clip_key(url)}.mp3"
     if not audio.exists():
         with tempfile.TemporaryDirectory() as tmp:
-            run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3",
+            run = subprocess.run([*YTDLP, "-q", "-x", "--audio-format", "mp3",
                                   "-o", f"{tmp}/clip.%(ext)s", url],
                                  capture_output=True, text=True, timeout=120)
             if run.returncode != 0:
@@ -225,7 +227,7 @@ def download_video(url):
     if path.exists():
         return path
     with tempfile.TemporaryDirectory() as tmp:
-        run = subprocess.run(["yt-dlp", "-q", "-f", "mp4/best", "--no-playlist",
+        run = subprocess.run([*YTDLP, "-q", "-f", "mp4/best", "--no-playlist",
                               "-o", f"{tmp}/v.%(ext)s", url],
                              capture_output=True, text=True, timeout=180)
         out = next(Path(tmp).glob("v.*"), None)
@@ -263,7 +265,7 @@ def strip_emoji(text):
 
 
 def extract(url):
-    run = subprocess.run(["yt-dlp", "--no-download", "-j", url],
+    run = subprocess.run([*YTDLP, "--no-download", "-j", url],
                          capture_output=True, text=True, timeout=120)
     if run.returncode != 0:
         errors = run.stderr.strip().splitlines()
@@ -368,7 +370,7 @@ def download_full(match):
     else:
         source = match["url"]
     with tempfile.TemporaryDirectory() as tmp:
-        run = subprocess.run(["yt-dlp", "-q", "-x", "--audio-format", "mp3", "--no-playlist",
+        run = subprocess.run([*YTDLP, "-q", "-x", "--audio-format", "mp3", "--no-playlist",
                               "-o", f"{tmp}/full.%(ext)s", source],
                              capture_output=True, text=True, timeout=180)
         if run.returncode != 0:
